@@ -1,0 +1,4 @@
+
+var 变量1啊 ="hello,world"
+
+print(变量1啊)
