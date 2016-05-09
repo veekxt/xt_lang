@@ -1,5 +1,7 @@
 mod lexer;
+mod parser;
 use lexer::*;
+use parser::*;
 use std::path::Path;
 
 fn main(){
