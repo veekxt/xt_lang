@@ -3,13 +3,20 @@ use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Clone)]
 pub enum Token{
     //字面量
     STR(String),
     INT(String),
-    //符号
+    //运算符号
+    PLUS,
+    MINUS,
+    STAR,
+    SLASH,
+    PERCENT,
+    //其他符号
     EQ,
     COMMA,
     LPAR,
@@ -25,37 +32,44 @@ pub enum Token{
     IF,
     WHILE,
     //FOR,
+    //结束
+    LAST,
     //错误
     ERR(String),
 }
 
-impl Token {
-    pub fn print(self){
-        match self {
-            Token::STR(s) => { print!("  str:{}",s); },
-            Token::INT(s) => { print!("  int:{}",s); },
-            Token::EQ => { print!("  ="); },
-            Token::COMMA => { print!("  ,"); },
-            Token::LPAR => { print!("  ("); },
-            Token::RPAR => { print!("  )"); },
-            Token::LSQB => { print!("  ["); },
-            Token::RSQB => { print!("  ]"); },
-            Token::LBRACE => { print!("  {{"); },
-            Token::RBRACE => { print!("  }}"); },
-            Token::IDEN(s) => { print!("  iden:{}",s); },
-            Token::LF => { print!("  "); },
-            Token::VAR => { print!("  var"); },
-            Token::IF => { print!("  if"); },
-            Token::WHILE => { print!("  while"); },
-            Token::ERR(s) => { print!("  error:{}",s); },
-            
+impl fmt::Display for Token{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Token::STR(ref s)   => write!(f, "str:{}", s),
+            Token::INT(ref s)   => write!(f, "int:{}", s),
+            Token::PLUS         => write!(f, "+"),
+            Token::MINUS        => write!(f, "-"),
+            Token::STAR         => write!(f, "*"),
+            Token::SLASH        => write!(f, "/"),
+            Token::PERCENT      => write!(f, "%"),
+            Token::EQ           => write!(f, "="),
+            Token::COMMA        => write!(f, ","),
+            Token::LPAR         => write!(f, "("),
+            Token::RPAR         => write!(f, ")"),
+            Token::LSQB         => write!(f, "["),
+            Token::RSQB         => write!(f, "]"),
+            Token::LBRACE       => write!(f, "{{"),
+            Token::RBRACE       => write!(f, "}}"),
+            Token::IDEN(ref s)  => write!(f, "iden:{}", s),
+            Token::LF           => write!(f, "\n"),
+            Token::VAR          => write!(f, "var"),
+            Token::IF           => write!(f, "if"),
+            Token::WHILE        => write!(f, "while"),
+            Token::LAST         => write!(f, "last"),
+            Token::ERR(ref s)   => write!(f, "err:{}", s),
         }
     }
 }
 
-struct ReadToken{
-    i:usize,
-    char_vec:Vec<char>,
+pub struct StatusVec<T>{
+    pub i:usize,
+    pub vec_data:Vec<T>,
 }
 
 fn is_iden_start(c:char) -> bool {
@@ -79,10 +93,10 @@ fn is_num(c:char) -> bool {
     }
 }
     
-impl ReadToken {
+impl StatusVec<char> {
 
     fn now_char(&self) -> Option<char> {
-        if self.i<self.char_vec.len() {Some(self.char_vec[self.i])}
+        if self.i < self.vec_data.len() {Some(self.vec_data[self.i])}
         else { None }
     }
     
@@ -136,7 +150,12 @@ impl ReadToken {
                 }
                 else {
                     match c {
-                        '=' => { self.i += 1; return Some(Token::EQ) }
+                        '+' => { self.i += 1; return Some(Token::PLUS); },
+                        '-' => { self.i += 1; return Some(Token::MINUS); },
+                        '*' => { self.i += 1; return Some(Token::STAR); },
+                        '/' => { self.i += 1; return Some(Token::SLASH); },
+                        '%' => { self.i += 1; return Some(Token::PERCENT); },
+                        '=' => { self.i += 1; return Some(Token::EQ); },
                         '(' => { self.i += 1; return Some(Token::LPAR); },
                         ')' => { self.i += 1; return Some(Token::RPAR); },
                         '[' => { self.i += 1; return Some(Token::LSQB); },
@@ -177,10 +196,10 @@ pub fn get_char_vec(path:&Path) -> Vec<char> {
     str_vec
 }
 
-pub fn get_tokens_from(path:&Path) -> Vec<Token>{
+pub fn get_tokens_from(path:&Path) -> StatusVec<Token>{
     let char_vec = get_char_vec(path);
     let mut tokens: Vec<Token> = Vec::new();
-    let mut read_token = ReadToken{i:0,char_vec:char_vec};
+    let mut read_token = StatusVec::<char>{i:0,vec_data:char_vec};
     loop {
         let t = read_token.next();
         match t {
@@ -190,9 +209,5 @@ pub fn get_tokens_from(path:&Path) -> Vec<Token>{
             None => {break;},
         }
     }
-    tokens
+    StatusVec::<Token> { i: 0, vec_data: tokens }
 }
-
-
-
-
