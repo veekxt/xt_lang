@@ -17,16 +17,8 @@ pub enum AST {
     IDEN(String),
 }
 
-impl StatusVec<Token> {
-    fn get(&mut self,i:usize,m:usize) -> Token{
-        if (self).i + i >= (self).vec_data.len() { 
-            Token::LAST
-        }
-        else {
-            self.i += m;
-            (self).vec_data[self.i + i].clone()
-        }
-    }
+fn build_exp() -> AST {
+    return AST::STR("asd".to_string());
 }
 
 fn main(){

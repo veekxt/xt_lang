@@ -1,4 +1,20 @@
-
-var s = { pig dog , slid}
-print(s,k[p])
-we+fg-u77
+a + b
+a>b
+a>=b
+a<b
+a<=b
+a!=b
+a==b
+a&&b
+a||b
+a+b
+a-b
+a*b
+a/b
+a%b
+a.b
+a,b,c
+s = [d,e,f]
+s={d,e,f}
+s=(d,e,f)
+if while not var notkey

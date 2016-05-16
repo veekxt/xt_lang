@@ -10,15 +10,25 @@ pub enum Token{
     //字面量
     STR(String),
     INT(String),
+    FLOAT(f64),
     //运算符号
     PLUS,
     MINUS,
     STAR,
     SLASH,
     PERCENT,
+    LT,
+    LE,
+    GT,
+    GE,
+    EQEQ,
+    NE,
+    ANDAND,
+    OROR,
     //其他符号
     EQ,
     COMMA,
+    DOT,
     LPAR,
     RPAR,
     LSQB,
@@ -31,6 +41,7 @@ pub enum Token{
     VAR,
     IF,
     WHILE,
+    NOT,
     //FOR,
     //结束
     LAST,
@@ -43,24 +54,35 @@ impl fmt::Display for Token{
         match *self {
             Token::STR(ref s)   => write!(f, "str:{}", s),
             Token::INT(ref s)   => write!(f, "int:{}", s),
+            Token::FLOAT(ref s) => write!(f, "float:{}", s),
             Token::PLUS         => write!(f, "+"),
             Token::MINUS        => write!(f, "-"),
             Token::STAR         => write!(f, "*"),
             Token::SLASH        => write!(f, "/"),
             Token::PERCENT      => write!(f, "%"),
+            Token::LT           => write!(f, "<"),
+            Token::LE           => write!(f, "<="),
+            Token::GT           => write!(f, ">"),
+            Token::GE           => write!(f, ">="),
+            Token::EQEQ         => write!(f, "=="),
+            Token::NE           => write!(f, "!="),
+            Token::ANDAND       => write!(f, "&&"),
+            Token::OROR         => write!(f, "||"),
             Token::EQ           => write!(f, "="),
             Token::COMMA        => write!(f, ","),
+            Token::DOT          => write!(f, "."),
             Token::LPAR         => write!(f, "("),
             Token::RPAR         => write!(f, ")"),
             Token::LSQB         => write!(f, "["),
             Token::RSQB         => write!(f, "]"),
             Token::LBRACE       => write!(f, "{{"),
             Token::RBRACE       => write!(f, "}}"),
-            Token::IDEN(ref s)  => write!(f, "iden:{}", s),
+            Token::IDEN(ref s)  => write!(f, "id: {}", s),
             Token::LF           => write!(f, "\n"),
             Token::VAR          => write!(f, "var"),
             Token::IF           => write!(f, "if"),
             Token::WHILE        => write!(f, "while"),
+            Token::NOT          => write!(f, "not"),
             Token::LAST         => write!(f, "last"),
             Token::ERR(ref s)   => write!(f, "err:{}", s),
         }
@@ -92,7 +114,19 @@ fn is_num(c:char) -> bool {
         _ => false,
     }
 }
-    
+
+impl StatusVec<Token> {
+    fn get(&mut self,i:usize,m:usize) -> Token{
+        if (self).i + i >= (self).vec_data.len() { 
+            Token::LAST
+        }
+        else {
+            self.i += m;
+            self.vec_data[self.i + i].clone()
+        }
+    }
+}
+
 impl StatusVec<char> {
 
     fn now_char(&self) -> Option<char> {
@@ -149,22 +183,65 @@ impl StatusVec<char> {
                     }
                 }
                 else {
-                    match c {
-                        '+' => { self.i += 1; return Some(Token::PLUS); },
-                        '-' => { self.i += 1; return Some(Token::MINUS); },
-                        '*' => { self.i += 1; return Some(Token::STAR); },
-                        '/' => { self.i += 1; return Some(Token::SLASH); },
-                        '%' => { self.i += 1; return Some(Token::PERCENT); },
-                        '=' => { self.i += 1; return Some(Token::EQ); },
-                        '(' => { self.i += 1; return Some(Token::LPAR); },
-                        ')' => { self.i += 1; return Some(Token::RPAR); },
-                        '[' => { self.i += 1; return Some(Token::LSQB); },
-                        ']' => { self.i += 1; return Some(Token::RSQB); },
-                        '{' => { self.i += 1; return Some(Token::LBRACE); },
-                        '}' => { self.i += 1; return Some(Token::RBRACE); },
-                        ',' => { self.i += 1; return Some(Token::COMMA); },
-                        '\n' => { self.i += 1;return Some(Token::LF); },
-                         _  => { self.i += 1;return Some(Token::ERR("".to_string())); },
+                    self.i += 1;
+                    return match c {
+                        '+' => { Some(Token::PLUS) },
+                        '-' => { Some(Token::MINUS) },
+                        '*' => { Some(Token::STAR) },
+                        '/' => { Some(Token::SLASH) },
+                        '%' => { Some(Token::PERCENT) },
+                        '<' => {
+                                    if let Some(next) = self.now_char() {
+                                        if next == '=' { self.i += 1; Some(Token::LE) }
+                                        else { Some(Token::LT) }
+                                    }
+                                    else { Some(Token::LT) }
+                               }
+                        '>' => {
+                                    if let Some(next) = self.now_char() {
+                                        if next == '=' { self.i += 1; Some(Token::GE) }
+                                        else { Some(Token::GT) }
+                                    }
+                                    else { Some(Token::GT) }
+                               }
+                        '=' => {
+                                    if let Some(next) = self.now_char() {
+                                        if next == '=' { self.i += 1; Some(Token::EQEQ) }
+                                        else { Some(Token::EQ) }
+                                    }
+                                    else { Some(Token::EQ) }
+                               },
+                        '!' => {
+                                    if let Some(next) = self.now_char() {
+                                        if next == '=' { self.i += 1; Some(Token::NE) }
+                                        else { Some(Token::ERR("unknown token \"!\"".to_string())) }
+                                    }
+                                    else { Some(Token::ERR("unknown token \"!\"".to_string())) }
+                               }
+                        '&' => {
+                                    if let Some(next) = self.now_char() {
+                                        if next == '&' { self.i += 1; Some(Token::ANDAND) }
+                                        else { Some(Token::ERR("unknown token \"&\"".to_string())) }
+                                    }
+                                    else { Some(Token::ERR("unknown token \"&\"".to_string())) }
+                               }
+                        '|' => {
+                                    if let Some(next) = self.now_char() {
+                                        if next == '|' { self.i += 1; Some(Token::OROR) }
+                                        else { Some(Token::ERR("unknown token \"|\"".to_string())) }
+                                    }
+                                    else { Some(Token::ERR("unknown token \"|\"".to_string())) }
+                               }
+                        '(' => { Some(Token::LPAR) },
+                        ')' => { Some(Token::RPAR) },
+                        '[' => { Some(Token::LSQB) },
+                        ']' => { Some(Token::RSQB) },
+                        '{' => { Some(Token::LBRACE) },
+                        '}' => { Some(Token::RBRACE) },
+                        ',' => { Some(Token::COMMA) },
+                        '.' => { Some(Token::DOT) },
+                        '\n'=> { Some(Token::LF) },
+                         _  => { Some(Token::ERR("".to_string())) },
                     }
                 }
             },
@@ -179,6 +256,7 @@ pub fn get_keywords() -> HashMap<&'static str,Token> {
     keywords.insert("var",Token::VAR);
     keywords.insert("if",Token::IF);
     keywords.insert("while",Token::WHILE);
+    keywords.insert("not",Token::NOT);
     keywords
 }
 
