@@ -123,6 +123,13 @@ fn is_num(c:char) -> bool {
     }
 }
 
+fn is_str_start(c:char) -> bool {
+    match c {
+        '\"' => true,
+        _ => false,
+    }
+}
+
 impl StatusVec<Token> {
     fn get(&mut self,i:usize,m:usize) -> Token{
         if (self).i + i >= (self).vec_data.len() { 
@@ -213,6 +220,39 @@ impl StatusVec<char> {
                         }
                     }
                     return if is_float==true { Some(Token::FLOAT(f64::from_str(tmp_str.as_ref()).unwrap())) } else { Some(Token::INT(isize::from_str(tmp_str.as_ref()).unwrap())) }
+                }
+                else if is_str_start(c) {
+                    let mut is_end = false;
+                    self.i+=1;
+                    loop {
+                        match self.now_char() {
+                            Some(c2) => {
+                                self.i+=1;
+                                if c2=='\\' {
+                                    if let Some(next) = self.now_char() {
+                                        self.i+=1;
+                                        match next {
+                                        'n' => { tmp_str.push('\n') },
+                                        'r' => { tmp_str.push('\r') },
+                                        't' => { tmp_str.push('\t') },
+                                        '\\'=> { tmp_str.push('\\') },
+                                        '0' => { tmp_str.push('\0') },
+                                        '\"'=> {  },
+                                        _   => { self.i-=1;tmp_str.push('\\'); }
+                                        }
+                                    }
+                                }
+                                else if c2=='\"' { is_end=true;break; }
+                                else {
+                                    tmp_str.push(c2);
+                                }
+                            },
+                            None => { 
+                                return Some(Token::ERR("has no end of str \"".to_string()));
+                            },
+                        }
+                    }
+                    return Some(Token::STR(tmp_str));
                 }
                 else {
                     self.i += 1;

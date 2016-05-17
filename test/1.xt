@@ -20,3 +20,6 @@ s=(d,e,f)
 if while not var notkey
 
 23+78.4.to_int()
+
+"abc" + "e\tb"
+"\\\a\t\v"
