@@ -131,7 +131,7 @@ fn is_str_start(c:char) -> bool {
 }
 
 impl StatusVec<Token> {
-    fn get(&mut self,i:usize,m:usize) -> Token{
+    pub fn get(&mut self,i:usize,m:usize) -> Token{
         if (self).i + i >= (self).vec_data.len() { 
             Token::LAST
         }
