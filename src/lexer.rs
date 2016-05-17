@@ -4,12 +4,13 @@ use std::io::prelude::*;
 use std::path::Path;
 use std::collections::HashMap;
 use std::fmt;
+use std::str::FromStr;
 
 #[derive(Clone)]
 pub enum Token{
     //字面量
     STR(String),
-    INT(String),
+    INT(isize),
     FLOAT(f64),
     //运算符号
     PLUS,
@@ -108,6 +109,13 @@ fn is_iden(c:char) -> bool {
     }
 }
 
+fn is_num_start(c:char) -> bool {
+    match c {
+        '0'...'9' => true,
+        _ => false,
+    }
+}
+
 fn is_num(c:char) -> bool {
     match c {
         '0'...'9' => true,
@@ -156,6 +164,7 @@ impl StatusVec<char> {
         let mut tmp_str = String::new();
         match self.now_char() {
             Some(c) => {
+                //关键字和标识符
                 if is_iden_start(c) {
                     self.i += 1;
                     tmp_str.push(c);
@@ -182,9 +191,33 @@ impl StatusVec<char> {
                         },
                     }
                 }
+                else if is_num_start(c) {
+                    let mut is_float:bool = false;
+                    self.i+=1;
+                    tmp_str.push(c);
+                    loop {
+                        match self.now_char() {
+                            Some(c2) => {
+                                if is_num(c2) {
+                                    self.i += 1;
+                                    tmp_str.push(c2);
+                                }
+                                else if c2=='.' && is_float == false {
+                                    self.i += 1;
+                                    tmp_str.push(c2);
+                                    is_float = true;
+                                }
+                                else {break;}
+                            },
+                            None => {break;},
+                        }
+                    }
+                    return if is_float==true { Some(Token::FLOAT(f64::from_str(tmp_str.as_ref()).unwrap())) } else { Some(Token::INT(isize::from_str(tmp_str.as_ref()).unwrap())) }
+                }
                 else {
                     self.i += 1;
                     return match c {
+                        //运算符
                         '+' => { Some(Token::PLUS) },
                         '-' => { Some(Token::MINUS) },
                         '*' => { Some(Token::STAR) },

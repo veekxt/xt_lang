@@ -12,5 +12,4 @@ fn main(){
         print!("\n");
     }
     println!("Tokens END");
-    test();
 }
