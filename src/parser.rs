@@ -15,26 +15,46 @@ pub enum AST {
     ERR(String),
 }
 
-pub fn exp_int(tokens:&mut StatusVec<Token>) -> AST {
+pub fn expe(tokens:&mut StatusVec<Token>) -> AST {
+    a_int(tokens)
+}
+
+pub fn exp7(tokens:&mut StatusVec<Token>) -> AST {
     let t = tokens.get(0,0);
     match t {
-        Token::INT(s) => { return AST::INT(s) },
-        _ => {return AST::ERR("expect int !".to_string());},
+        Token::INT(s) => { a_int(tokens) },
+        _ => { AST::ERR("expect min exp !".to_string()) },
     }
 }
 
-pub fn exp_float(tokens:&mut StatusVec<Token>) -> AST {
+pub fn a_int(tokens:&mut StatusVec<Token>) -> AST {
     let t = tokens.get(0,0);
     match t {
-        Token::FLOAT(s) => { return AST::FLOAT(s) },
-        _ => {return AST::ERR("expect float !".to_string());},
+        Token::INT(s) => { AST::INT(s) },
+        _ => { AST::ERR("expect int !".to_string()) },
     }
 }
 
-pub fn exp_str(tokens:&mut StatusVec<Token>) -> AST {
+pub fn a_float(tokens:&mut StatusVec<Token>) -> AST {
     let t = tokens.get(0,0);
     match t {
-        Token::STR(s) => { return AST::STR(s) },
-        _ => {return AST::ERR("expect str !".to_string());},
+        Token::FLOAT(s) => { AST::FLOAT(s) },
+        _ => { AST::ERR("expect float !".to_string()) },
+    }
+}
+
+pub fn a_str(tokens:&mut StatusVec<Token>) -> AST {
+    let t = tokens.get(0,0);
+    match t {
+        Token::STR(s) => { AST::STR(s) },
+        _ => { AST::ERR("expect str !".to_string()) },
+    }
+}
+
+pub fn a_iden(tokens:&mut StatusVec<Token>) -> AST {
+    let t = tokens.get(0,0);
+    match t {
+        Token::IDEN(s) => {  AST::IDEN(s) },
+        _ => { AST::ERR("expect str !".to_string()) },
     }
 }
