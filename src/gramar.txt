@@ -1,9 +1,7 @@
 
 ; exp ABNF
 
-exp     = 0*1( 'not' ) expe
-
-expe    = exp1 *( op1 exp1 )
+exp    = exp1 *( op1 exp1 )
 
 exp1    = exp2 *( op2 exp2 )
 
@@ -11,7 +9,10 @@ exp2    = exp3 *( op3 exp3 )
 
 exp3    = exp4 *( op4 exp4 )
 
-exp4    = 0*1( op5 ) exp5
+exp4    = 0*1( op5 ) expn
+
+expn    =  op1  exp1
+         / exp5
 
 exp5    = exp6 *( call )
 
