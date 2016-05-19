@@ -136,8 +136,9 @@ impl StatusVec<Token> {
             Token::LAST
         }
         else {
+            let t = self.vec_data[self.i + i].clone();
             self.i += m;
-            self.vec_data[self.i + i].clone()
+            t
         }
     }
 }
