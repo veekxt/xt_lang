@@ -54,7 +54,119 @@ macro_rules! err_return {
     )
 }
 
+pub fn exp(tokens:&mut StatusVec<Token>) -> AST {
+    let mut eroot=err_return!(exp7(tokens));
+    let mut eright:Box<AST>;
+    loop {
+        match tokens.get(0,0) {
+            Token::PLUS => {
+                tokens.i+=1;
+                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
+                eroot=left;
+            },
+            _ =>{break;},
+        }
+    }
+    eroot
+}
+
 pub fn expe(tokens:&mut StatusVec<Token>) -> AST {
+    let mut eroot=err_return!(exp7(tokens));
+    let mut eright:Box<AST>;
+    loop {
+        match tokens.get(0,0) {
+            Token::PLUS => {
+                tokens.i+=1;
+                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
+                eroot=left;
+            },
+            _ =>{break;},
+        }
+    }
+    eroot
+}
+
+pub fn exp1(tokens:&mut StatusVec<Token>) -> AST {
+    let mut eroot=err_return!(exp7(tokens));
+    let mut eright:Box<AST>;
+    loop {
+        match tokens.get(0,0) {
+            Token::PLUS => {
+                tokens.i+=1;
+                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
+                eroot=left;
+            },
+            _ =>{break;},
+        }
+    }
+    eroot
+}
+
+pub fn exp2(tokens:&mut StatusVec<Token>) -> AST {
+    let mut eroot=err_return!(exp7(tokens));
+    let mut eright:Box<AST>;
+    loop {
+        match tokens.get(0,0) {
+            Token::PLUS => {
+                tokens.i+=1;
+                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
+                eroot=left;
+            },
+            _ =>{break;},
+        }
+    }
+    eroot
+}
+
+pub fn exp3(tokens:&mut StatusVec<Token>) -> AST {
+    let mut eroot=err_return!(exp7(tokens));
+    let mut eright:Box<AST>;
+    loop {
+        match tokens.get(0,0) {
+            Token::PLUS => {
+                tokens.i+=1;
+                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
+                eroot=left;
+            },
+            _ =>{break;},
+        }
+    }
+    eroot
+}
+
+pub fn exp4(tokens:&mut StatusVec<Token>) -> AST {
+    let mut eroot=err_return!(exp7(tokens));
+    let mut eright:Box<AST>;
+    loop {
+        match tokens.get(0,0) {
+            Token::PLUS => {
+                tokens.i+=1;
+                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
+                eroot=left;
+            },
+            _ =>{break;},
+        }
+    }
+    eroot
+}
+
+pub fn exp5(tokens:&mut StatusVec<Token>) -> AST {
+    let mut eroot=err_return!(exp7(tokens));
+    let mut eright:Box<AST>;
+    loop {
+        match tokens.get(0,0) {
+            Token::PLUS => {
+                tokens.i+=1;
+                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
+                eroot=left;
+            },
+            _ =>{break;},
+        }
+    }
+    eroot
+}
+
+pub fn exp6(tokens:&mut StatusVec<Token>) -> AST {
     let mut eroot=err_return!(exp7(tokens));
     let mut eright:Box<AST>;
     loop {
@@ -79,6 +191,38 @@ pub fn exp7(tokens:&mut StatusVec<Token>) -> AST {
         Token::IDEN(s)  =>    { a_iden(tokens) },
         _ => { AST::ERR("expect min exp !".to_string()) },
     }
+}
+
+pub fn call(tokens:&mut StatusVec<Token>) -> AST {
+    let mut eroot=err_return!(exp7(tokens));
+    let mut eright:Box<AST>;
+    loop {
+        match tokens.get(0,0) {
+            Token::PLUS => {
+                tokens.i+=1;
+                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
+                eroot=left;
+            },
+            _ =>{break;},
+        }
+    }
+    eroot
+}
+
+pub fn args(tokens:&mut StatusVec<Token>) -> AST {
+    let mut eroot=err_return!(exp7(tokens));
+    let mut eright:Box<AST>;
+    loop {
+        match tokens.get(0,0) {
+            Token::PLUS => {
+                tokens.i+=1;
+                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
+                eroot=left;
+            },
+            _ =>{break;},
+        }
+    }
+    eroot
 }
 
 pub fn a_int(tokens:&mut StatusVec<Token>) -> AST {
