@@ -23,13 +23,22 @@ impl AST {
             AST::INT(ref s) => {
                 print!("{}",s);
             },
+            AST::STR(ref s) => {
+                print!("'{}'",s);
+            },
+            AST::FLOAT(ref s) => {
+                print!("{}",s);
+            },
+            AST::IDEN(ref s) => {
+                print!("{}",s);
+            },
             AST::PLUS{ref left,ref right} => {
                 print!("+");
-                print!("(");
+                print!("( ");
                 left.print();
                 print!(",");
                 right.print();
-                print!(")");
+                print!(" )");
             }
             _ => {print!("todo:unknown");},
         }
@@ -64,7 +73,10 @@ pub fn expe(tokens:&mut StatusVec<Token>) -> AST {
 pub fn exp7(tokens:&mut StatusVec<Token>) -> AST {
     let t = tokens.get(0,0);
     match t {
-        Token::INT(s) => { a_int(tokens) },
+        Token::INT(s)   =>    { a_int(tokens) },
+        Token::FLOAT(s) =>    { a_float(tokens) },
+        Token::STR(s)   =>    { a_str(tokens) },
+        Token::IDEN(s)  =>    { a_iden(tokens) },
         _ => { AST::ERR("expect min exp !".to_string()) },
     }
 }
