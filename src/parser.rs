@@ -12,7 +12,7 @@ pub enum AST {
     COMMA,
     PLUS{ left:Box<AST>, right: Box<AST> },
     MINUS{ left:Box<AST>, right: Box<AST> },
-    DEV(Box<AST>),
+    NEG(Box<AST>),
     MUL{ left:Box<AST>, right: Box<AST> },
     DIV{ left:Box<AST>, right: Box<AST> },
     MOD{ left:Box<AST>, right: Box<AST> },
@@ -125,8 +125,8 @@ impl AST {
                 q_left = (*left).as_ref();
                 q_right = (*right).as_ref();
             },
-            AST::DEV(ref left) => {
-                print!("-");
+            AST::NEG(ref left) => {
+                print!("neg:-");
                 q_left = (*left).as_ref();
             },
             AST::NOT(ref left) => {
@@ -283,7 +283,7 @@ pub fn exp4(tokens:&mut StatusVec<Token>) -> AST {
     match tokens.get(0,0) {
         Token::MINUS => {
             tokens.i+=1;
-            AST::DEV(Box::new(err_return!(expn(tokens))))
+            AST::NEG(Box::new(err_return!(exp4(tokens))))
         },
         _ => {
             err_return!(expn(tokens))

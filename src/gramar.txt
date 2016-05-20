@@ -9,7 +9,8 @@ exp2    = exp3 *( op3 exp3 )
 
 exp3    = exp4 *( op4 exp4 )
 
-exp4    = 0*1( op5 ) expn
+exp4    =  0*1( op5 ) exp4
+         / expn
 
 expn    =  op7  exp1
          / exp5
