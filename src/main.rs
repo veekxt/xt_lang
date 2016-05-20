@@ -7,7 +7,7 @@ use std::path::Path;
 fn main(){
     let mut ast:AST;
     {
-        let mut tokens = get_tokens_from(Path::new("test/2.xt"));
+        let mut tokens = get_tokens_from(Path::new("test/3.xt"));
         println!("Tokens :");
         for t in &tokens.vec_data {
             print!("  {}",t);

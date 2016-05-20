@@ -66,7 +66,7 @@ impl AST {
                 q_right = (*right).as_ref();
             },
             AST::MINUS{ref left,ref right} => {
-                print!("+");
+                print!("-");
                 q_left = (*left).as_ref();
                 q_right = (*right).as_ref();
             },
@@ -76,12 +76,12 @@ impl AST {
                 q_right = (*right).as_ref();
             },
             AST::DIV{ref left,ref right} => {
-                print!("*");
+                print!("/");
                 q_left = (*left).as_ref();
                 q_right = (*right).as_ref();
             },
             AST::MOD{ref left,ref right} => {
-                print!("*");
+                print!("%");
                 q_left = (*left).as_ref();
                 q_right = (*right).as_ref();
             },
