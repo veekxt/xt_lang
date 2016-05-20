@@ -14,7 +14,7 @@ fn main(){
             print!("\n");
         }
         println!("Tokens END");
-        ast = expe(&mut tokens);
-        ast.print();
+        ast = exp(&mut tokens);
+        ast.print(0);
     }
 }

@@ -43,6 +43,8 @@ pub enum Token{
     IF,
     WHILE,
     NOT,
+    TRUE,
+    FALSE,
     //FOR,
     //结束
     LAST,
@@ -84,6 +86,8 @@ impl fmt::Display for Token{
             Token::IF           => write!(f, "if"),
             Token::WHILE        => write!(f, "while"),
             Token::NOT          => write!(f, "not"),
+            Token::TRUE         => write!(f, "true"),
+            Token::FALSE        => write!(f, "false"),
             Token::LAST         => write!(f, "last"),
             Token::ERR(ref s)   => write!(f, "err:{}", s),
         }
@@ -331,6 +335,8 @@ pub fn get_keywords() -> HashMap<&'static str,Token> {
     keywords.insert("if",Token::IF);
     keywords.insert("while",Token::WHILE);
     keywords.insert("not",Token::NOT);
+    keywords.insert("true",Token::TRUE);
+    keywords.insert("false",Token::FALSE);
     keywords
 }
 
