@@ -11,7 +11,7 @@ exp3    = exp4 *( op4 exp4 )
 
 exp4    = 0*1( op5 ) expn
 
-expn    =  op1  exp1
+expn    =  op7  exp1
          / exp5
 
 exp5    = exp6 *( call )
@@ -36,3 +36,5 @@ op4     = '*' / '/' / '%'
 op5     = '-'
 
 op6     = '.'
+
+op7     = ‘not’
