@@ -1,7 +1,7 @@
 
 ; exp ABNF
 
-exp    = exp1 *( op1 exp1 )
+exp     = exp1 *( op1 exp1 )
 
 exp1    = exp2 *( op2 exp2 )
 
@@ -37,4 +37,4 @@ op5     = '-'
 
 op6     = '.'
 
-op7     = ‘not’
+op7     = 'not'
