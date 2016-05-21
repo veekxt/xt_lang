@@ -5,6 +5,7 @@ use std::path::Path;
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
+use status;
 
 #[derive(Clone)]
 pub enum Token{
@@ -41,6 +42,7 @@ pub enum Token{
     //关键字
     VAR,
     IF,
+    ELSE,
     WHILE,
     NOT,
     TRUE,
@@ -84,6 +86,7 @@ impl fmt::Display for Token{
             Token::LF           => write!(f, "\\n"),
             Token::VAR          => write!(f, "var"),
             Token::IF           => write!(f, "if"),
+            Token::ELSE         => write!(f, "ELSE"),
             Token::WHILE        => write!(f, "while"),
             Token::NOT          => write!(f, "not"),
             Token::TRUE         => write!(f, "true"),
@@ -160,7 +163,8 @@ impl StatusVec<(Token,usize)> {
     }
     pub fn get_line(&mut self) -> usize {
         if (self).i >= (self).vec_data.len() { 
-            0
+            let (_,line) = self.vec_data[self.vec_data.len()-1];
+            line
         }
         else
         {
@@ -379,7 +383,7 @@ impl LineChars {
                                     }
                                     Some(Token::LF) 
                                },
-                         _  => { Some(Token::ERR("".to_string())) },
+                         _  => { Some(Token::ERR("unknown token!".to_string())) },
                     }
                 }
             },
@@ -393,6 +397,7 @@ pub fn get_keywords() -> HashMap<&'static str,Token> {
     let mut keywords = HashMap::new();
     keywords.insert("var",Token::VAR);
     keywords.insert("if",Token::IF);
+    keywords.insert("else",Token::ELSE);
     keywords.insert("while",Token::WHILE);
     keywords.insert("not",Token::NOT);
     keywords.insert("true",Token::TRUE);
@@ -421,8 +426,15 @@ pub fn get_tokens_from(path:&Path) -> StatusVec<(Token,usize)>{
     loop {
         let (t,line) = read_token.next();
         match t {
-            Some(t) => {
-                tokens.push((t,line));
+            Some(to) => {
+                tokens.push((to.clone(),line));
+                match to {
+                    Token::ERR(ref s) => unsafe {
+                        status::lexer_err=true;
+                        println!("line {}:lexer error:{}",line,s);
+                    },
+                    _ => {},
+                }
             },
             None => {break;},
         }

@@ -1,5 +1,7 @@
 mod lexer;
 mod parser;
+mod status;
+
 use lexer::*;
 use parser::*;
 use std::path::Path;
@@ -16,8 +18,11 @@ fn main(){
             }
             println!("Tokens END");
         }
-        tokens.i+=1;
-        ast = exp(&mut tokens);
-        ast.print(0);
+        if unsafe{!status::lexer_err} {
+            tokens.i+=1;
+            ast = stmt(&mut tokens);
+            ast.print(0);
+        }
+
     }
 }

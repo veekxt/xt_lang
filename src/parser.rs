@@ -3,7 +3,7 @@ use lexer::*;
 pub enum AST {
     STMT(Vec<AST>),
     VAR{ iden:Box<AST>, exp: Box<AST> },
-    IF{ exp: Box<AST>, stmt: Box<AST>, else_stmt:Option<Box<AST>>  },
+    IF{ exp: Box<AST>, stmt: Box<AST>, else_stmt:Box<AST>  },
     WHILE{ exp: Box<AST>, stmt: Box<AST> },
     CALL{ exp: Box<AST>, arg_list: Box<AST> },
     ARGS(Vec<AST>),
@@ -162,6 +162,20 @@ impl AST {
                 print!("index");
                 q_left = (*exp).as_ref();
                 q_right = (*index).as_ref();
+            },
+            AST::IF{ref exp,ref stmt,ref else_stmt} => {
+                print!("if");
+                println!("");
+                (*exp).as_ref().print(n+1);
+                println!("");
+                (*stmt).as_ref().print(n+1);
+                match *((*else_stmt).as_ref()) {
+                    AST::NULL => {}
+                    _ => {
+                        println!("");
+                        (*else_stmt).as_ref().print(n+1);
+                    }
+                }
             },
             AST::ERR(ref s,ref line) => {
                 print!("line {}:parser error:{}",line,s);
@@ -366,6 +380,46 @@ pub fn exp5(tokens:&mut StatusVec<(Token,usize)>) -> AST {
         }
     }
     eroot
+}
+
+pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    match  tokens.get(0,0) {
+        Token::IF => {
+            stmt_if(tokens)
+        }
+          Token::IDEN(_)
+        | Token::INT(_) 
+        | Token::STR(_)
+        | Token::MINUS
+        | Token::NOT
+        | Token::FLOAT(_)
+        | Token::LPAR
+        => {
+            exp(tokens)
+        }
+        _ => {
+            AST::ERR("expect stmt or stmt-block !".to_string(),tokens.get_line())
+        }
+    }
+}
+
+pub fn stmt(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    err_return!(stmt_if(tokens))
+}
+
+pub fn stmt_if(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    parser_expect!(tokens,Token::IF,"expect \"if\"");
+    let condition = err_return!(exp(tokens));
+    let stmt = err_return!(single_stmt(tokens));
+    let mut else_stmt = AST::NULL;
+    match tokens.get(0,0) {
+        Token::ELSE => {
+            tokens.i+=1;
+            else_stmt = err_return!(single_stmt(tokens));
+        }
+        _ => {}
+    }
+    AST::IF{ exp:Box::new(condition), stmt:Box::new(stmt), else_stmt:Box::new(else_stmt) }
 }
 
 pub fn exp6(tokens:&mut StatusVec<(Token,usize)>) -> AST {

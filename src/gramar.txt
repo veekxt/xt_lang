@@ -9,7 +9,7 @@ exp2    = exp3 *( op3 exp3 )
 
 exp3    = exp4 *( op4 exp4 )
 
-exp4    =  0*1( op5 ) exp4
+exp4    = [ op5 ] exp4
          / expn
 
 expn    =  op7  exp1
@@ -42,7 +42,7 @@ op7     = 'not'
 
 if-stmt =       'if' exp stmt
             *  ('elif' exp stmt)
-            0*1('else' exp stmt)
+            ['else' stmt]
 
 stmt    = '{' *(s_stmt '\n') '}'
 
