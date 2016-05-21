@@ -7,6 +7,7 @@ pub enum AST {
     WHILE{ exp: Box<AST>, stmt: Box<AST> },
     CALL{ exp: Box<AST>, arg_list: Box<AST> },
     ARGS(Vec<AST>),
+    INDEX{exp:Box<AST>,index:Box<AST>},
     ASSIGN{ left_value:Box<AST>, exp: Box<AST> },
     
     COMMA,
@@ -148,6 +149,19 @@ impl AST {
                 print!("call");
                 q_left = (*exp).as_ref();
                 q_right = (*arg_list).as_ref();
+            },
+            AST::ARGS(ref a) => {
+                print!("args");
+                print!("({})",a.len());
+                for i in a {
+                    println!("");
+                    i.print(n+1);
+                }
+            },
+            AST::INDEX{ref exp,ref index} => {
+                print!("index");
+                q_left = (*exp).as_ref();
+                q_right = (*index).as_ref();
             },
             AST::ERR(ref s) => {
                 print!("parser error:{}",s);
@@ -326,6 +340,12 @@ pub fn exp5(tokens:&mut StatusVec<Token>) -> AST {
                 tokens.i+=1;
                 eroot = left;
             },
+            Token::LSQB => {
+                tokens.i+=1;
+                let left = AST::INDEX{ exp:Box::new(eroot), index:Box::new(err_return!(exp_index(tokens))) };
+                tokens.i+=1;
+                eroot = left;
+            },
             Token::DOT => {
                 tokens.i+=1;
                 let left = AST::DOT{ left:Box::new(eroot), right:Box::new(err_return!(a_iden(tokens))) };
@@ -343,8 +363,32 @@ pub fn exp6(tokens:&mut StatusVec<Token>) -> AST {
     AST::NULL
 }
 
+pub fn exp_index(tokens:&mut StatusVec<Token>) -> AST {
+    err_return!(exp(tokens))
+}
+
 pub fn exp_args(tokens:&mut StatusVec<Token>) -> AST {
-    AST::NULL
+    let mut args:Vec<AST> = Vec::new();
+    match tokens.get(0,0) {
+        Token::RPAR => {
+            
+        },
+        _ => {
+            let mut tmp = err_return!(exp(tokens));
+            args.push(tmp);
+            loop{
+                match tokens.get(0,0) {
+                    Token::COMMA => {
+                        tokens.i+=1;
+                        tmp = err_return!(exp(tokens));
+                        args.push(tmp);
+                    }
+                    _ => {break;}
+                }
+            }
+        },
+    }
+    AST::ARGS(args)
 }
 
 pub fn exp7(tokens:&mut StatusVec<Token>) -> AST {
@@ -367,22 +411,6 @@ pub fn exp7(tokens:&mut StatusVec<Token>) -> AST {
 }
 
 pub fn call(tokens:&mut StatusVec<Token>) -> AST {
-    let mut eroot=err_return!(exp7(tokens));
-    let mut eright:Box<AST>;
-    loop {
-        match tokens.get(0,0) {
-            Token::PLUS => {
-                tokens.i+=1;
-                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
-                eroot=left;
-            },
-            _ =>{break;},
-        }
-    }
-    eroot
-}
-
-pub fn args(tokens:&mut StatusVec<Token>) -> AST {
     let mut eroot=err_return!(exp7(tokens));
     let mut eright:Box<AST>;
     loop {
