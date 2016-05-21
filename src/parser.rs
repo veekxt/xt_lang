@@ -197,6 +197,15 @@ macro_rules! err_return {
     )
 }
 
+macro_rules! parser_expect {
+    ($tokens:ident,$token:pat,$mess:expr) => (
+        match $tokens.get(0,0) {
+            $token => { $tokens.i+=1; },
+            _ => { return AST::ERR($mess.to_string()); },
+        }
+    )
+}
+
 pub fn exp(tokens:&mut StatusVec<Token>) -> AST {
     let mut eroot=err_return!(exp1(tokens));
     let mut eright:Box<AST>;
@@ -337,13 +346,13 @@ pub fn exp5(tokens:&mut StatusVec<Token>) -> AST {
             Token::LPAR => {
                 tokens.i+=1;
                 let left = AST::CALL{ exp:Box::new(eroot), arg_list:Box::new(err_return!(exp_args(tokens))) };
-                tokens.i+=1;
+                parser_expect!(tokens,Token::RPAR,"expect \")\",");
                 eroot = left;
             },
             Token::LSQB => {
                 tokens.i+=1;
                 let left = AST::INDEX{ exp:Box::new(eroot), index:Box::new(err_return!(exp_index(tokens))) };
-                tokens.i+=1;
+                parser_expect!(tokens,Token::RSQB,"expect \"]\"");
                 eroot = left;
             },
             Token::DOT => {
@@ -403,10 +412,10 @@ pub fn exp7(tokens:&mut StatusVec<Token>) -> AST {
         Token::LPAR     => {
             tokens.i+=1;
             let tmp = err_return!(exp(tokens));
-            tokens.i+=1;
+            parser_expect!(tokens,Token::RPAR,"expect \")\"");
             tmp
         }
-        _ => { AST::ERR("expect min exp !".to_string()) },
+        _ => { AST::ERR("expect min-exp !".to_string()) },
     }
 }
 
