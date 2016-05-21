@@ -140,6 +140,13 @@ fn is_str_start(c:char) -> bool {
     }
 }
 
+fn is_comment_start(c:char) -> bool {
+    match c {
+        '#' => true,
+        _ => false,
+    }
+}
+
 impl StatusVec<(Token,usize)> {
     pub fn get(&mut self,i:usize,m:usize) -> Token{
         if (self).i + i >= (self).vec_data.len() { 
@@ -164,7 +171,6 @@ impl StatusVec<(Token,usize)> {
 }
 
 impl LineChars {
-
     fn now_char(&self) -> Option<char> {
         if self.i < self.vec_data.len() {Some(self.vec_data[self.i])}
         else { None }
@@ -183,6 +189,21 @@ impl LineChars {
             }
             else{
                 break;
+            }
+        }
+        if let Some(now) = self.now_char() {
+            if now == '#' {
+                self.i += 1;
+                while let Some(now) = self.now_char() {
+                    if now == '\n' {
+                        self.i += 1;
+                        self.line += 1;
+                        break;
+                    }
+                    else {
+                        self.i += 1;
+                    } 
+                }
             }
         }
     }
@@ -345,7 +366,19 @@ impl LineChars {
                         '}' => { Some(Token::RBRACE) },
                         ',' => { Some(Token::COMMA) },
                         '.' => { Some(Token::DOT) },
-                        '\n'=> { self.line+=1;Some(Token::LF) },
+                        '\n'=> { 
+                                    self.line+=1;
+                                    while let Some(next) = self.now_char() {
+                                        if next=='\n' {
+                                            self.i+=1;
+                                            self.line+=1;
+                                        }
+                                        else {
+                                            break;
+                                        }
+                                    }
+                                    Some(Token::LF) 
+                               },
                          _  => { Some(Token::ERR("".to_string())) },
                     }
                 }
