@@ -35,6 +35,7 @@ pub enum AST {
     STR(String),
     IDEN(String),
     NULL,
+    END,
     ERR(String,usize),
 }
 
@@ -43,7 +44,7 @@ impl AST {
         let mut q_left:&AST = &AST::NULL;
         let mut q_right:&AST = &AST::NULL;
         for i in 0..n {
-            print!("  ");
+            print!("   ");
         }
         match *self {
             AST::INT(ref s) => {
@@ -59,7 +60,10 @@ impl AST {
                 print!("{}",s);
             },
             AST::NULL => {
-                print!("NULL");
+                print!("null");
+            },
+            AST::END => {
+                print!("stmt-end");
             },
             AST::PLUS{ref left,ref right} => {
                 print!("+");
@@ -163,6 +167,13 @@ impl AST {
                 q_left = (*exp).as_ref();
                 q_right = (*index).as_ref();
             },
+            AST::STMT(ref ast_list) => {
+                print!("stmt");
+                for i in ast_list {
+                    println!("");
+                    i.print(n+1);
+                }
+            },
             AST::IF{ref exp,ref stmt,ref else_stmt} => {
                 print!("if");
                 println!("");
@@ -217,6 +228,18 @@ macro_rules! parser_expect {
             $token => { $tokens.i+=1; },
             _ => { return AST::ERR($mess.to_string(),$tokens.get_line()); },
         }
+    )
+}
+
+macro_rules! option {
+    ($tokens:ident,$token:pat) => (
+        loop {
+            match $tokens.get(0,0) {
+                $token => { $tokens.i+=1; },
+                _ =>{break;},
+            }
+        }
+
     )
 }
 
@@ -382,10 +405,35 @@ pub fn exp5(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     eroot
 }
 
-pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+#[derive(Clone,Copy)]
+pub struct status {
+    in_if:bool,
+    in_loop:bool,
+    in_stmt:bool,
+}
+
+impl status {
+    pub fn new(in_if:bool,in_loop:bool,in_stmt:bool) -> status{
+        status{in_if:in_if,in_loop:in_loop,in_stmt:in_stmt}
+    }
+}
+
+pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
     match  tokens.get(0,0) {
+        Token::LBRACE => {
+            sta.in_stmt = true;
+            tokens.i+=1;
+            option!(tokens,Token::LF);
+            let tmp = stmt(tokens,sta);
+            option!(tokens,Token::LF);
+            parser_expect!(tokens,Token::RBRACE,"stmt-block lost a \"}\"");
+            tmp
+        }
+        Token::RBRACE => {
+            AST::END
+        }
         Token::IF => {
-            stmt_if(tokens)
+            stmt_if(tokens,sta)
         }
           Token::IDEN(_)
         | Token::INT(_) 
@@ -397,25 +445,58 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>) -> AST {
         => {
             exp(tokens)
         }
+        Token::LAST => {
+            AST::END
+        }
         _ => {
             AST::ERR("expect stmt or stmt-block !".to_string(),tokens.get_line())
         }
     }
 }
 
-pub fn stmt(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    err_return!(stmt_if(tokens))
+pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
+    let mut stmt_vec:Vec<AST> = Vec::new();
+    option!(tokens,Token::LF);
+    stmt_vec.push(err_return!(single_stmt(tokens,sta)));
+    loop {
+        match tokens.get(0,0) {
+            Token::LF => {
+                tokens.i+=1;
+                stmt_vec.push(err_return!(single_stmt(tokens,sta)));
+            }
+            Token::LBRACE => {
+                stmt_vec.push(err_return!(single_stmt(tokens,sta)));
+            }
+            Token::LAST => {
+                stmt_vec.push(AST::END);
+                break;
+            }
+            Token::RBRACE => {
+                if sta.in_stmt {break;}
+                else {
+                    return AST::ERR("find \"}\" but \"{\" miss".to_string(),tokens.get_line());
+                }
+            }
+            _ => {
+                return AST::ERR("expect a new line!".to_string(),tokens.get_line());
+            }
+        }
+    }
+    AST::STMT(stmt_vec)
 }
 
-pub fn stmt_if(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+pub fn stmt_if(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
     parser_expect!(tokens,Token::IF,"expect \"if\"");
     let condition = err_return!(exp(tokens));
-    let stmt = err_return!(single_stmt(tokens));
+    option!(tokens,Token::LF);
+    let stmt = err_return!(single_stmt(tokens,sta));
+    option!(tokens,Token::LF);
     let mut else_stmt = AST::NULL;
     match tokens.get(0,0) {
         Token::ELSE => {
             tokens.i+=1;
-            else_stmt = err_return!(single_stmt(tokens));
+            option!(tokens,Token::LF);
+            else_stmt = err_return!(single_stmt(tokens,sta));
         }
         _ => {}
     }

@@ -1,6 +1,6 @@
 mod lexer;
 mod parser;
-mod status;
+mod err_status;
 
 use lexer::*;
 use parser::*;
@@ -18,9 +18,8 @@ fn main(){
             }
             println!("Tokens END");
         }
-        if unsafe{!status::lexer_err} {
-            tokens.i+=1;
-            ast = stmt(&mut tokens);
+        if unsafe{!err_status::lexer_err} {
+            ast = stmt(&mut tokens,&mut parser::status::new(false,false,false));
             ast.print(0);
         }
 

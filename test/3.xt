@@ -1,16 +1,9 @@
-#line comment
 
+#test if parser
 
-
-
-
-
-
-
-
-
-
-
-
-#cvvv
-if -cc>v  c+9 else if c-9
+if a > b {
+    print("a biger")
+}
+else {
+    print(b-a)
+}

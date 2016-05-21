@@ -5,7 +5,7 @@ use std::path::Path;
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
-use status;
+use err_status;
 
 #[derive(Clone)]
 pub enum Token{
@@ -430,7 +430,7 @@ pub fn get_tokens_from(path:&Path) -> StatusVec<(Token,usize)>{
                 tokens.push((to.clone(),line));
                 match to {
                     Token::ERR(ref s) => unsafe {
-                        status::lexer_err=true;
+                        err_status::lexer_err=true;
                         println!("line {}:lexer error:{}",line,s);
                     },
                     _ => {},
