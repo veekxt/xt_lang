@@ -7,3 +7,7 @@ if a > b {
 else {
     print(b-a)
 }
+
+while s<m {
+    kk-ss
+}

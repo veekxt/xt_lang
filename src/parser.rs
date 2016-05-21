@@ -44,7 +44,7 @@ impl AST {
         let mut q_left:&AST = &AST::NULL;
         let mut q_right:&AST = &AST::NULL;
         for i in 0..n {
-            print!("   ");
+            print!("    ");
         }
         match *self {
             AST::INT(ref s) => {
@@ -187,6 +187,11 @@ impl AST {
                         (*else_stmt).as_ref().print(n+1);
                     }
                 }
+            },
+            AST::WHILE{ref exp,ref stmt} => {
+                print!("while");
+                q_left = (*exp).as_ref();
+                q_right = (*stmt).as_ref();
             },
             AST::ERR(ref s,ref line) => {
                 print!("line {}:parser error:{}",line,s);
@@ -435,6 +440,9 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST 
         Token::IF => {
             stmt_if(tokens,sta)
         }
+        Token::WHILE => {
+            stmt_while(tokens,sta)
+        }
           Token::IDEN(_)
         | Token::INT(_) 
         | Token::STR(_)
@@ -501,6 +509,15 @@ pub fn stmt_if(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
         _ => {}
     }
     AST::IF{ exp:Box::new(condition), stmt:Box::new(stmt), else_stmt:Box::new(else_stmt) }
+}
+
+
+pub fn stmt_while(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
+    parser_expect!(tokens,Token::WHILE,"expect \"while\"");
+    let condition = err_return!(exp(tokens));
+    option!(tokens,Token::LF);
+    let stmt = err_return!(single_stmt(tokens,sta));
+    AST::WHILE{ exp:Box::new(condition), stmt:Box::new(stmt) }
 }
 
 pub fn exp6(tokens:&mut StatusVec<(Token,usize)>) -> AST {
