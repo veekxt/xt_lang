@@ -35,7 +35,7 @@ pub enum AST {
     STR(String),
     IDEN(String),
     NULL,
-    ERR(String),
+    ERR(String,usize),
 }
 
 impl AST {
@@ -163,8 +163,8 @@ impl AST {
                 q_left = (*exp).as_ref();
                 q_right = (*index).as_ref();
             },
-            AST::ERR(ref s) => {
-                print!("parser error:{}",s);
+            AST::ERR(ref s,ref line) => {
+                print!("line {}:parser error:{}",line,s);
             },
             _ => {print!("todo:unknown");},
         }
@@ -191,7 +191,7 @@ impl AST {
 macro_rules! err_return {
     ($fn_exp:expr) => (
         match $fn_exp {
-            AST::ERR(s) => { return AST::ERR(s); },
+            AST::ERR(s,line) => { return AST::ERR(s,line); },
             ast => { ast },
         }
     )
@@ -201,12 +201,12 @@ macro_rules! parser_expect {
     ($tokens:ident,$token:pat,$mess:expr) => (
         match $tokens.get(0,0) {
             $token => { $tokens.i+=1; },
-            _ => { return AST::ERR($mess.to_string()); },
+            _ => { return AST::ERR($mess.to_string(),$tokens.get_line()); },
         }
     )
 }
 
-pub fn exp(tokens:&mut StatusVec<Token>) -> AST {
+pub fn exp(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut eroot=err_return!(exp1(tokens));
     let mut eright:Box<AST>;
     loop {
@@ -227,7 +227,7 @@ pub fn exp(tokens:&mut StatusVec<Token>) -> AST {
     eroot
 }
 
-pub fn exp1(tokens:&mut StatusVec<Token>) -> AST {
+pub fn exp1(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut eroot=err_return!(exp2(tokens));
     let mut eright:Box<AST>;
     loop {
@@ -268,7 +268,7 @@ pub fn exp1(tokens:&mut StatusVec<Token>) -> AST {
     eroot
 }
 
-pub fn exp2(tokens:&mut StatusVec<Token>) -> AST {
+pub fn exp2(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut eroot=err_return!(exp3(tokens));
     let mut eright:Box<AST>;
     loop {
@@ -289,7 +289,7 @@ pub fn exp2(tokens:&mut StatusVec<Token>) -> AST {
     eroot
 }
 
-pub fn exp3(tokens:&mut StatusVec<Token>) -> AST {
+pub fn exp3(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut eroot=err_return!(exp4(tokens));
     let mut eright:Box<AST>;
     loop {
@@ -315,7 +315,7 @@ pub fn exp3(tokens:&mut StatusVec<Token>) -> AST {
     eroot
 }
 
-pub fn exp4(tokens:&mut StatusVec<Token>) -> AST {
+pub fn exp4(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match tokens.get(0,0) {
         Token::MINUS => {
             tokens.i+=1;
@@ -327,7 +327,7 @@ pub fn exp4(tokens:&mut StatusVec<Token>) -> AST {
     }
 }
 
-pub fn expn(tokens:&mut StatusVec<Token>) -> AST {
+pub fn expn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match tokens.get(0,0) {
         Token::NOT => {
             tokens.i+=1;
@@ -339,7 +339,7 @@ pub fn expn(tokens:&mut StatusVec<Token>) -> AST {
     }
 }
 
-pub fn exp5(tokens:&mut StatusVec<Token>) -> AST {
+pub fn exp5(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut eroot=err_return!(exp7(tokens));
     loop {
         match tokens.get(0,0) {
@@ -368,15 +368,15 @@ pub fn exp5(tokens:&mut StatusVec<Token>) -> AST {
     eroot
 }
 
-pub fn exp6(tokens:&mut StatusVec<Token>) -> AST {
+pub fn exp6(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     AST::NULL
 }
 
-pub fn exp_index(tokens:&mut StatusVec<Token>) -> AST {
+pub fn exp_index(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     err_return!(exp(tokens))
 }
 
-pub fn exp_args(tokens:&mut StatusVec<Token>) -> AST {
+pub fn exp_args(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut args:Vec<AST> = Vec::new();
     match tokens.get(0,0) {
         Token::RPAR => {
@@ -400,7 +400,7 @@ pub fn exp_args(tokens:&mut StatusVec<Token>) -> AST {
     AST::ARGS(args)
 }
 
-pub fn exp7(tokens:&mut StatusVec<Token>) -> AST {
+pub fn exp7(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let t = tokens.get(0,0);
     match t {
         Token::TRUE     =>    { a_bool(tokens) },
@@ -415,11 +415,11 @@ pub fn exp7(tokens:&mut StatusVec<Token>) -> AST {
             parser_expect!(tokens,Token::RPAR,"expect \")\"");
             tmp
         }
-        _ => { AST::ERR("expect min-exp !".to_string()) },
+        _ => { AST::ERR("expect min-exp !".to_string(),tokens.get_line()) },
     }
 }
 
-pub fn call(tokens:&mut StatusVec<Token>) -> AST {
+pub fn call(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut eroot=err_return!(exp7(tokens));
     let mut eright:Box<AST>;
     loop {
@@ -435,43 +435,43 @@ pub fn call(tokens:&mut StatusVec<Token>) -> AST {
     eroot
 }
 
-pub fn a_bool(tokens:&mut StatusVec<Token>) -> AST {
+pub fn a_bool(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let t = tokens.get(0,1);
     match t {
         Token::TRUE => { AST::TRUE },
         Token::FALSE => { AST::FALSE },
-        _ => { AST::ERR("expect \"true\" or \"false\"".to_string()) },
+        _ => { AST::ERR("expect \"true\" or \"false\"".to_string(),tokens.get_line()) },
     }
 }
 
-pub fn a_int(tokens:&mut StatusVec<Token>) -> AST {
+pub fn a_int(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let t = tokens.get(0,1);
     match t {
         Token::INT(s) => { AST::INT(s) },
-        _ => { AST::ERR("expect int !".to_string()) },
+        _ => { AST::ERR("expect int !".to_string(),tokens.get_line()) },
     }
 }
 
-pub fn a_float(tokens:&mut StatusVec<Token>) -> AST {
+pub fn a_float(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let t = tokens.get(0,1);
     match t {
         Token::FLOAT(s) => { AST::FLOAT(s) },
-        _ => { AST::ERR("expect float !".to_string()) },
+        _ => { AST::ERR("expect float !".to_string(),tokens.get_line()) },
     }
 }
 
-pub fn a_str(tokens:&mut StatusVec<Token>) -> AST {
+pub fn a_str(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let t = tokens.get(0,1);
     match t {
         Token::STR(s) => { AST::STR(s) },
-        _ => { AST::ERR("expect str !".to_string()) },
+        _ => { AST::ERR("expect str !".to_string(),tokens.get_line()) },
     }
 }
 
-pub fn a_iden(tokens:&mut StatusVec<Token>) -> AST {
+pub fn a_iden(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let t = tokens.get(0,1);
     match t {
         Token::IDEN(s) => {  AST::IDEN(s) },
-        _ => { AST::ERR("expect identifier !".to_string()) },
+        _ => { AST::ERR("expect identifier !".to_string(),tokens.get_line()) },
     }
 }

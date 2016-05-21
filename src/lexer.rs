@@ -81,7 +81,7 @@ impl fmt::Display for Token{
             Token::LBRACE       => write!(f, "{{"),
             Token::RBRACE       => write!(f, "}}"),
             Token::IDEN(ref s)  => write!(f, "id: {}", s),
-            Token::LF           => write!(f, "\n"),
+            Token::LF           => write!(f, "\\n"),
             Token::VAR          => write!(f, "var"),
             Token::IF           => write!(f, "if"),
             Token::WHILE        => write!(f, "while"),
@@ -97,6 +97,12 @@ impl fmt::Display for Token{
 pub struct StatusVec<T>{
     pub i:usize,
     pub vec_data:Vec<T>,
+}
+
+pub struct LineChars{
+    pub i:usize,
+    pub line:usize,
+    pub vec_data:Vec<char>,
 }
 
 fn is_iden_start(c:char) -> bool {
@@ -134,20 +140,30 @@ fn is_str_start(c:char) -> bool {
     }
 }
 
-impl StatusVec<Token> {
+impl StatusVec<(Token,usize)> {
     pub fn get(&mut self,i:usize,m:usize) -> Token{
         if (self).i + i >= (self).vec_data.len() { 
             Token::LAST
         }
         else {
-            let t = self.vec_data[self.i + i].clone();
+            let (t,l) = self.vec_data[self.i + i].clone();
             self.i += m;
             t
         }
     }
+    pub fn get_line(&mut self) -> usize {
+        if (self).i >= (self).vec_data.len() { 
+            0
+        }
+        else
+        {
+            let (_,line) = self.vec_data[self.i];
+            line
+        }
+    }
 }
 
-impl StatusVec<char> {
+impl LineChars {
 
     fn now_char(&self) -> Option<char> {
         if self.i < self.vec_data.len() {Some(self.vec_data[self.i])}
@@ -171,7 +187,8 @@ impl StatusVec<char> {
         }
     }
     
-    fn next(&mut self) -> Option<Token>{
+    fn next(&mut self) -> (Option<Token>,usize){
+        let mut rs:Option<Token>;
         self.goto_useful();
         let mut tmp_str = String::new();
         match self.now_char() {
@@ -195,11 +212,11 @@ impl StatusVec<char> {
                     let keywords = get_keywords();
                     match keywords.get(&*tmp_str) {
                         Some(k) => {
-                            return Some(k.clone());
+                            rs = Some(k.clone());
                         },
                         None => {
                             let t = Token::IDEN(tmp_str);
-                            return Some(t);
+                            rs = Some(t);
                         },
                     }
                 }
@@ -233,7 +250,8 @@ impl StatusVec<char> {
                             None => {break;},
                         }
                     }
-                    return if is_float==true { Some(Token::FLOAT(f64::from_str(tmp_str.as_ref()).unwrap())) } else { Some(Token::INT(isize::from_str(tmp_str.as_ref()).unwrap())) }
+                    rs = if is_float==true { Some(Token::FLOAT(f64::from_str(tmp_str.as_ref()).unwrap())) } 
+                    else { Some(Token::INT(isize::from_str(tmp_str.as_ref()).unwrap())) }
                 }
                 else if is_str_start(c) {
                     let mut is_end = false;
@@ -262,15 +280,15 @@ impl StatusVec<char> {
                                 }
                             },
                             None => { 
-                                return Some(Token::ERR("has no end of str \"".to_string()));
+                                rs = Some(Token::ERR("has no end of str \"".to_string()));
                             },
                         }
                     }
-                    return Some(Token::STR(tmp_str));
+                    rs = Some(Token::STR(tmp_str));
                 }
                 else {
                     self.i += 1;
-                    return match c {
+                    rs = match c {
                         //运算符
                         '+' => { Some(Token::PLUS) },
                         '-' => { Some(Token::MINUS) },
@@ -327,15 +345,15 @@ impl StatusVec<char> {
                         '}' => { Some(Token::RBRACE) },
                         ',' => { Some(Token::COMMA) },
                         '.' => { Some(Token::DOT) },
-                        '\n'=> { Some(Token::LF) },
+                        '\n'=> { self.line+=1;Some(Token::LF) },
                          _  => { Some(Token::ERR("".to_string())) },
                     }
                 }
             },
-            None => { return None; },
+            None => { rs = None; },
         }
+        (rs,self.line)
     }
-    
 }
 
 pub fn get_keywords() -> HashMap<&'static str,Token> {
@@ -363,18 +381,18 @@ pub fn get_char_vec(path:&Path) -> Vec<char> {
     str_vec
 }
 
-pub fn get_tokens_from(path:&Path) -> StatusVec<Token>{
+pub fn get_tokens_from(path:&Path) -> StatusVec<(Token,usize)>{
     let char_vec = get_char_vec(path);
-    let mut tokens: Vec<Token> = Vec::new();
-    let mut read_token = StatusVec::<char>{i:0,vec_data:char_vec};
+    let mut tokens: Vec<(Token,usize)> = Vec::new();
+    let mut read_token = LineChars{i:0,line:1,vec_data:char_vec};
     loop {
-        let t = read_token.next();
+        let (t,line) = read_token.next();
         match t {
             Some(t) => {
-                tokens.push(t);
+                tokens.push((t,line));
             },
             None => {break;},
         }
     }
-    StatusVec::<Token> { i: 0, vec_data: tokens }
+    StatusVec::<(Token,usize)> { i: 0, vec_data: tokens }
 }
