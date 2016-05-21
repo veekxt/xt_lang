@@ -1,13 +1,13 @@
 
 #test if parser
-
-if a > b {
-    print("a biger")
-}
-else {
-    print(b-a)
-}
-
+#
+#if a > b {
+#    print("a biger")
+#}
+#else {
+#    print(b-a)
+#}
+#
 while s<m {
     kk-ss
     break

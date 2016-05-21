@@ -191,27 +191,25 @@ impl LineChars {
                 || now == ' '
                 || now == '\t' {
                     self.i += 1;
-                }else{
+                }else if is_comment_start(now) {
+                    self.i += 1;
+                    while let Some(now) = self.now_char() {
+                        if now == '\n' {
+                            self.i += 1;
+                            self.line += 1;
+                            break;
+                        }
+                        else {
+                            self.i += 1;
+                        } 
+                    }
+                }
+                else{
                     break;
                 }
             }
             else{
                 break;
-            }
-        }
-        if let Some(now) = self.now_char() {
-            if is_comment_start(now) {
-                self.i += 1;
-                while let Some(now) = self.now_char() {
-                    if now == '\n' {
-                        self.i += 1;
-                        self.line += 1;
-                        break;
-                    }
-                    else {
-                        self.i += 1;
-                    } 
-                }
             }
         }
     }

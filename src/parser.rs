@@ -432,6 +432,7 @@ impl status {
 }
 
 pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
+    option!(tokens,Token::LF);
     match  tokens.get(0,0) {
         Token::LBRACE => {
             sta.in_stmt += 1;
@@ -496,7 +497,10 @@ pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
         match tokens.get(0,0) {
             Token::LF => {
                 tokens.i+=1;
-                stmt_vec.push(err_return!(single_stmt(tokens,sta)));
+                match tokens.get(0,0) {
+                    Token::LAST => {}
+                    _ => {stmt_vec.push(err_return!(single_stmt(tokens,sta)));}
+                }
             }
             Token::LBRACE => {
                 stmt_vec.push(err_return!(single_stmt(tokens,sta)));
