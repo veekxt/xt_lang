@@ -15,12 +15,12 @@ exp4    =  0*1( op5 ) exp4
 expn    =  op7  exp1
          / exp5
 
-exp5    = exp6 *( call )
-
-exp6    = exp7 *( op6 exp7 *( call ) )
+exp5    = exp7 *((op6 exp7) / call / index)
 
 exp7    = IDEN / INT / FLOAT / STR
           / '(' exp ')'
+
+index   = '[' exp ']'
 
 call    = '(' args ')'
 

@@ -5,7 +5,7 @@ pub enum AST {
     VAR{ iden:Box<AST>, exp: Box<AST> },
     IF{ exp: Box<AST>, stmt: Box<AST>, else_stmt:Option<Box<AST>>  },
     WHILE{ exp: Box<AST>, stmt: Box<AST> },
-    FN_CALL{ exp: Box<AST>, arg_list: Box<AST> },
+    CALL{ exp: Box<AST>, arg_list: Box<AST> },
     ARGS(Vec<AST>),
     ASSIGN{ left_value:Box<AST>, exp: Box<AST> },
     
@@ -139,23 +139,36 @@ impl AST {
             AST::FALSE => {
                 print!("false");
             },
+            AST::DOT{ref left,ref right} => {
+                print!(".");
+                q_left = (*left).as_ref();
+                q_right = (*right).as_ref();
+            },
+            AST::CALL{ref exp,ref arg_list} => {
+                print!("call");
+                q_left = (*exp).as_ref();
+                q_right = (*arg_list).as_ref();
+            },
+            AST::ERR(ref s) => {
+                print!("parser error:{}",s);
+            },
             _ => {print!("todo:unknown");},
         }
         match *q_left {
             AST::NULL => {},
             _ => {
-                //print!("( ");
-                print!("\n");
-                q_left.print(n+1);
                 match *q_right {
-                    AST::NULL => {},
+                    AST::NULL => {
+                        print!("\n");
+                        q_left.print(n+1);
+                    },
                     _ => {
-                        //print!(",");
+                        print!("\n");
+                        q_left.print(n+1);
                         print!("\n");
                         q_right.print(n+1);
                     },
                 }
-                //print!(" )");
             },
         }
     }
@@ -298,17 +311,40 @@ pub fn expn(tokens:&mut StatusVec<Token>) -> AST {
             AST::NOT(Box::new(err_return!(exp1(tokens))))
         },
         _ => {
-            err_return!(exp7(tokens))
+            err_return!(exp5(tokens))
         },
     }
 }
 
 pub fn exp5(tokens:&mut StatusVec<Token>) -> AST {
-    err_return!(exp6(tokens))
+    let mut eroot=err_return!(exp7(tokens));
+    loop {
+        match tokens.get(0,0) {
+            Token::LPAR => {
+                tokens.i+=1;
+                let left = AST::CALL{ exp:Box::new(eroot), arg_list:Box::new(err_return!(exp_args(tokens))) };
+                tokens.i+=1;
+                eroot = left;
+            },
+            Token::DOT => {
+                tokens.i+=1;
+                let left = AST::DOT{ left:Box::new(eroot), right:Box::new(err_return!(a_iden(tokens))) };
+                eroot = left;
+            },
+            _ => {
+                break;
+            },
+        }
+    }
+    eroot
 }
 
 pub fn exp6(tokens:&mut StatusVec<Token>) -> AST {
-    err_return!(exp7(tokens))
+    AST::NULL
+}
+
+pub fn exp_args(tokens:&mut StatusVec<Token>) -> AST {
+    AST::NULL
 }
 
 pub fn exp7(tokens:&mut StatusVec<Token>) -> AST {
@@ -399,6 +435,6 @@ pub fn a_iden(tokens:&mut StatusVec<Token>) -> AST {
     let t = tokens.get(0,1);
     match t {
         Token::IDEN(s) => {  AST::IDEN(s) },
-        _ => { AST::ERR("expect str !".to_string()) },
+        _ => { AST::ERR("expect identifier !".to_string()) },
     }
 }

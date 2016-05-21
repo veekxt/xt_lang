@@ -216,7 +216,16 @@ impl StatusVec<char> {
                                 }
                                 else if c2=='.' && is_float == false {
                                     self.i += 1;
-                                    tmp_str.push(c2);
+                                    if let Some(c3) = self.now_char() {
+                                        if !is_num(c3) {
+                                            self.i -= 1;
+                                            break;
+                                        }else {
+                                            tmp_str.push(c2);
+                                        }
+                                    }else{
+                                        break;
+                                    }
                                     is_float = true;
                                 }
                                 else {break;}
