@@ -192,7 +192,7 @@ impl LineChars {
             }
         }
         if let Some(now) = self.now_char() {
-            if now == '#' {
+            if is_comment_start(now) {
                 self.i += 1;
                 while let Some(now) = self.now_char() {
                     if now == '\n' {
