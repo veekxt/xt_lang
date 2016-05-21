@@ -39,3 +39,17 @@ op5     = '-'
 op6     = '.'
 
 op7     = 'not'
+
+if-stmt =       'if' exp stmt
+            *  ('elif' exp stmt)
+            0*1('else' exp stmt)
+
+stmt    = '{' *(s_stmt '\n') '}'
+
+s_stmt  =   assign-stmt
+          / var-stmt
+          / if-stmt
+          / while-stmt
+            ;todo more
+
+while-stmt  = 'while' exp stmt
