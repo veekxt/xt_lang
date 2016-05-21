@@ -5,6 +5,8 @@ pub enum AST {
     VAR{ iden:Box<AST>, exp: Box<AST> },
     IF{ exp: Box<AST>, stmt: Box<AST>, else_stmt:Box<AST>  },
     WHILE{ exp: Box<AST>, stmt: Box<AST> },
+    BREAK,
+    CONTINUE,
     CALL{ exp: Box<AST>, arg_list: Box<AST> },
     ARGS(Vec<AST>),
     INDEX{exp:Box<AST>,index:Box<AST>},
@@ -192,6 +194,12 @@ impl AST {
                 print!("while");
                 q_left = (*exp).as_ref();
                 q_right = (*stmt).as_ref();
+            },
+            AST::BREAK => {
+                print!("break");
+            },
+            AST::CONTINUE => {
+                print!("continue");
             },
             AST::ERR(ref s,ref line) => {
                 print!("line {}:parser error:{}",line,s);
@@ -412,13 +420,13 @@ pub fn exp5(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 
 #[derive(Clone,Copy)]
 pub struct status {
-    in_if:bool,
-    in_loop:bool,
-    in_stmt:bool,
+    in_if:isize,
+    in_loop:isize,
+    in_stmt:isize,
 }
 
 impl status {
-    pub fn new(in_if:bool,in_loop:bool,in_stmt:bool) -> status{
+    pub fn new(in_if:isize,in_loop:isize,in_stmt:isize) -> status{
         status{in_if:in_if,in_loop:in_loop,in_stmt:in_stmt}
     }
 }
@@ -426,12 +434,13 @@ impl status {
 pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
     match  tokens.get(0,0) {
         Token::LBRACE => {
-            sta.in_stmt = true;
+            sta.in_stmt += 1;
             tokens.i+=1;
             option!(tokens,Token::LF);
             let tmp = stmt(tokens,sta);
             option!(tokens,Token::LF);
             parser_expect!(tokens,Token::RBRACE,"stmt-block lost a \"}\"");
+            sta.in_stmt -= 1;
             tmp
         }
         Token::RBRACE => {
@@ -441,7 +450,24 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST 
             stmt_if(tokens,sta)
         }
         Token::WHILE => {
-            stmt_while(tokens,sta)
+            sta.in_loop += 1;
+            let tmp = stmt_while(tokens,sta);
+            sta.in_loop -= 1;
+            tmp
+        }
+        Token::BREAK => {
+            if sta.in_loop > 0 {
+                a_brk(tokens)
+            }else{
+                AST::ERR("\"break\" must in a loop-struct !".to_string(),tokens.get_line())
+            }
+        }
+        Token::CONTINUE => {
+            if sta.in_loop > 0 {
+                a_ctn(tokens)
+            }else{
+                AST::ERR("\"continue\" must in a loop-struct !".to_string(),tokens.get_line())
+            }
         }
           Token::IDEN(_)
         | Token::INT(_) 
@@ -480,7 +506,7 @@ pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
                 break;
             }
             Token::RBRACE => {
-                if sta.in_stmt {break;}
+                if sta.in_stmt>0 {break;}
                 else {
                     return AST::ERR("find \"}\" but \"{\" miss".to_string(),tokens.get_line());
                 }
@@ -625,5 +651,21 @@ pub fn a_iden(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match t {
         Token::IDEN(s) => {  AST::IDEN(s) },
         _ => { AST::ERR("expect identifier !".to_string(),tokens.get_line()) },
+    }
+}
+
+pub fn a_brk(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    let t = tokens.get(0,1);
+    match t {
+        Token::BREAK => { AST::BREAK },
+        _ => { AST::ERR("expect \"break\"".to_string(),tokens.get_line()) },
+    }
+}
+
+pub fn a_ctn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    let t = tokens.get(0,1);
+    match t {
+        Token::CONTINUE => { AST::CONTINUE },
+        _ => { AST::ERR("expect \"continue\" !".to_string(),tokens.get_line()) },
     }
 }

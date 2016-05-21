@@ -19,7 +19,7 @@ fn main(){
             println!("Tokens END");
         }
         if unsafe{!err_status::lexer_err} {
-            ast = stmt(&mut tokens,&mut parser::status::new(false,false,false));
+            ast = stmt(&mut tokens,&mut parser::status::new(0,0,0));
             ast.print(0);
         }
 
