@@ -24,7 +24,9 @@ index   = '[' exp ']'
 
 call    = '(' args ')'
 
-args    = *( exp *( ',' exp  ) )
+exp_args    = *( exp *( ',' exp  ) *( ',' de_val  ) )
+
+de_val     =  iden '=' exp
 
 op1     = '&&' / '||'
 
@@ -40,16 +42,19 @@ op6     = '.'
 
 op7     = 'not'
 
-if-stmt =       'if' exp stmt
-            *  ('elif' exp stmt)
-            ['else' stmt]
+if-stmt =       'if' exp s_stmt  ['else' s_stmt]
 
-stmt    = '{' *(s_stmt '\n') '}'
+stmt    = *(s_stmt '\n')
 
 s_stmt  =   assign-stmt
           / var-stmt
           / if-stmt
           / while-stmt
+          / '{' stmt '}'
             ;todo more
 
 while-stmt  = 'while' exp stmt
+
+fun-def   =   'def' iden '(' def_args ')' stmt
+
+def_args   = *( iden *( ',' iden  ) *( ',' de_val  ) )

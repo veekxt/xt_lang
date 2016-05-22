@@ -40,11 +40,13 @@ pub enum Token{
     LF,
     //关键字
     VAR,
+    DEF,
     IF,
     ELSE,
     WHILE,
     BREAK,
     CONTINUE,
+    RETURN,
     NOT,
     TRUE,
     FALSE,
@@ -86,11 +88,13 @@ impl fmt::Display for Token{
             Token::IDEN(ref s)  => write!(f, "id: {}", s),
             Token::LF           => write!(f, "\\n"),
             Token::VAR          => write!(f, "var"),
+            Token::DEF          => write!(f, "def"),
             Token::IF           => write!(f, "if"),
             Token::ELSE         => write!(f, "ELSE"),
             Token::WHILE        => write!(f, "while"),
             Token::BREAK        => write!(f, "break"),
             Token::CONTINUE     => write!(f, "continue"),
+            Token::RETURN     => write!(f, "return"),
             Token::NOT          => write!(f, "not"),
             Token::TRUE         => write!(f, "true"),
             Token::FALSE        => write!(f, "false"),
@@ -401,11 +405,13 @@ impl LineChars {
 pub fn get_keywords() -> HashMap<&'static str,Token> {
     let mut keywords = HashMap::new();
     keywords.insert("var",Token::VAR);
+    keywords.insert("def",Token::DEF);
     keywords.insert("if",Token::IF);
     keywords.insert("else",Token::ELSE);
     keywords.insert("while",Token::WHILE);
     keywords.insert("break",Token::BREAK);
     keywords.insert("continue",Token::CONTINUE);
+    keywords.insert("return",Token::RETURN);
     keywords.insert("not",Token::NOT);
     keywords.insert("true",Token::TRUE);
     keywords.insert("false",Token::FALSE);

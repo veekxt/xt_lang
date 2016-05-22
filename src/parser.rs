@@ -1,6 +1,7 @@
 use lexer::*;
 use err_status;
 
+#[derive(Clone)]
 pub enum AST {
     STMT(Vec<AST>),
     VAR{ iden:Box<AST>, exp: Box<AST> },
@@ -8,11 +9,14 @@ pub enum AST {
     WHILE{ exp: Box<AST>, stmt: Box<AST> },
     BREAK,
     CONTINUE,
+    RETURN( Box<AST> ),
     CALL{ exp: Box<AST>, arg_list: Box<AST> },
     ARGS(Vec<AST>),
     INDEX{exp:Box<AST>,index:Box<AST>},
     ASSIGN{ left_value:Box<AST>, exp: Box<AST> },
-
+    DEVAL{ iden:Box<AST>, val:Box<AST> },
+    DEF{ iden:Box<AST>,args:Box<AST>,stmt:Box<AST> },
+    
     PLUS{ left:Box<AST>, right: Box<AST> },
     MINUS{ left:Box<AST>, right: Box<AST> },
     NEG(Box<AST>),
@@ -67,6 +71,11 @@ impl AST {
             AST::END => {
                 print!("stmt-end");
             },
+            AST::DEVAL{ref iden,ref val} => {
+                print!("de-val");
+                q_left = (*iden).as_ref();
+                q_right = (*val).as_ref();
+            },
             AST::ASSIGN{ref left_value,ref exp} => {
                 print!("=");
                 q_left = (*left_value).as_ref();
@@ -76,6 +85,14 @@ impl AST {
                 print!("var");
                 q_left = (*iden).as_ref();
                 q_right = (*exp).as_ref();
+            },
+            AST::DEF{ref iden,ref args,ref stmt} => {
+                println!("def");
+                (*iden).as_ref().print(n+1);
+                println!("");
+                (*args).as_ref().print(n+1);
+                println!("");
+                (*stmt).as_ref().print(n+1);
             },
             AST::PLUS{ref left,ref right} => {
                 print!("+");
@@ -210,6 +227,10 @@ impl AST {
             },
             AST::CONTINUE => {
                 print!("continue");
+            },
+            AST::RETURN(ref e) => {
+                println!("return");
+                (*e).as_ref().print(n+1);
             },
             AST::ERR(ref s,ref line) => {
                 println!("line {}:parser error:{}",line,s);
@@ -427,11 +448,12 @@ pub struct Status {
     in_if:isize,
     in_loop:isize,
     in_stmt:isize,
+    in_fn:isize,
 }
 
 impl Status {
-    pub fn new(in_if:isize,in_loop:isize,in_stmt:isize) -> Status{
-        Status{in_if:in_if,in_loop:in_loop,in_stmt:in_stmt}
+    pub fn new(in_if:isize,in_loop:isize,in_stmt:isize,in_fn:isize) -> Status{
+        Status{in_if:in_if,in_loop:in_loop,in_stmt:in_stmt,in_fn:in_fn}
     }
 }
 
@@ -460,12 +482,15 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST 
         Token::RBRACE => {
             AST::END
         }
+        Token::DEF => {
+            fn_def(tokens,sta)
+        }
         Token::IF => {
             stmt_if(tokens,sta)
         }
         Token::WHILE => {
             sta.in_loop += 1;
-            let tmp = stmt_while(tokens,sta);
+            let tmp = err_return!(stmt_while(tokens,sta));
             sta.in_loop -= 1;
             tmp
         }
@@ -474,6 +499,13 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST 
                 a_brk(tokens)
             }else{
                 AST::ERR("\"break\" must in a loop-struct !".to_string(),tokens.get_line())
+            }
+        }
+        Token::RETURN => {
+            if sta.in_fn > 0 {
+                a_rtn(tokens)
+            }else{
+                AST::ERR("\"return\" must in a function define !".to_string(),tokens.get_line())
             }
         }
         Token::CONTINUE => {
@@ -618,21 +650,60 @@ pub fn exp_index(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     err_return!(exp(tokens))
 }
 
-pub fn exp_args(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+pub fn fn_def(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
+    parser_expect!(tokens,Token::DEF,"function define must be use a \"def\"");
+    let fun_name = err_return!(a_iden(tokens));
+    parser_expect!(tokens,Token::LPAR,"function define have no arguments,expect a \"(...)\"");
+    let fun_args = err_return!(def_args(tokens));
+    parser_expect!(tokens,Token::RPAR,"function arguments must be closed with \")\"");
+    sta.in_fn+=1;
+    let fun_stmt = err_return!(single_stmt(tokens,sta));
+    sta.in_fn-=1;
+    AST::DEF { iden:Box::new(fun_name),args:Box::new(fun_args),stmt:Box::new(fun_stmt) }
+}
+
+pub fn def_args(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    enum ArgType {
+        Must,
+        Default,
+    }
+    let mut arg_type = ArgType::Must;
     let mut args:Vec<AST> = Vec::new();
+    macro_rules! match_first_de_val {
+        ($tmp:expr) => {
+            match tokens.get(0,0) {
+                Token::EQ => {
+                    tokens.i+=1;
+                    let de_val = AST::DEVAL{ iden:Box::new($tmp),val:Box::new(err_return!(exp(tokens))) };
+                    args.push(de_val);
+                    arg_type = ArgType::Default;
+                }
+                _ => {
+                    args.push($tmp);
+                }
+            }
+        }
+    }
     match tokens.get(0,0) {
         Token::RPAR => {
             
         },
         _ => {
-            let mut tmp = err_return!(exp(tokens));
-            args.push(tmp);
+            let tmp = err_return!(a_iden(tokens));
+            match_first_de_val!(tmp);
             loop{
                 match tokens.get(0,0) {
                     Token::COMMA => {
                         tokens.i+=1;
-                        tmp = err_return!(exp(tokens));
-                        args.push(tmp);
+                        match arg_type {
+                            ArgType::Default => {
+                                args.push(err_return!(exp_default_value(tokens)));
+                            }
+                            ArgType::Must => {
+                                let tmp = err_return!(a_iden(tokens));
+                                match_first_de_val!(tmp);
+                            }
+                        }
                     }
                     _ => {break;}
                 }
@@ -640,6 +711,75 @@ pub fn exp_args(tokens:&mut StatusVec<(Token,usize)>) -> AST {
         },
     }
     AST::ARGS(args)
+}
+
+pub fn exp_args(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    enum ArgType {
+        Must,
+        Default,
+    }
+    let mut arg_type = ArgType::Must;
+    let mut args:Vec<AST> = Vec::new();
+    macro_rules! match_first_de_val {
+        ($tmp:expr) => {
+            match $tmp {
+                AST::IDEN(_) => {
+                    match tokens.get(0,0) {
+                        Token::EQ => {
+                            tokens.i+=1;
+                            let de_val = AST::DEVAL{ iden:Box::new($tmp),val:Box::new(err_return!(exp(tokens))) };
+                            args.push(de_val);
+                            arg_type = ArgType::Default;
+                        }
+                        _ => {
+                            args.push($tmp);
+                        }
+                    }
+                }
+                _ => {
+                    args.push($tmp);
+                }
+            }
+        }
+    }
+    match tokens.get(0,0) {
+        Token::RPAR => {
+            
+        },
+        _ => {
+            let tmp = err_return!(exp(tokens));
+            match_first_de_val!(tmp);
+            loop{
+                match tokens.get(0,0) {
+                    Token::COMMA => {
+                        tokens.i+=1;
+                        match arg_type {
+                            ArgType::Default => {
+                                args.push(err_return!(exp_default_value(tokens)));
+                            }
+                            ArgType::Must => {
+                                let tmp = err_return!(exp(tokens));
+                                match_first_de_val!(tmp);
+                            }
+                        }
+                    }
+                    _ => {break;}
+                }
+            }
+        },
+    }
+    AST::ARGS(args)
+}
+
+pub fn exp_default_value(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    let tmp = err_return!(exp(tokens));
+    match tmp {
+        AST::IDEN(_) => {
+            parser_expect!(tokens,Token::EQ,"in default value expect \"=\"");
+            AST::DEVAL{ iden:Box::new(tmp),val:Box::new(err_return!(exp(tokens))) }
+        }
+        _ => { AST::ERR("expect default value , but left-value not a iden !".to_string(),tokens.get_line()) },
+    }
 }
 
 pub fn exp7(tokens:&mut StatusVec<(Token,usize)>) -> AST {
@@ -714,6 +854,22 @@ pub fn a_ctn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let t = tokens.get(0,0);
     match t {
         Token::CONTINUE => { tokens.i+=1; AST::CONTINUE },
+        _ => { AST::ERR("expect \"continue\" !".to_string(),tokens.get_line()) },
+    }
+}
+
+pub fn a_rtn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    let t = tokens.get(0,0);
+    match t {
+        Token::RETURN => { 
+            tokens.i+=1;
+            match tokens.get(0,0) {
+                Token::LF | Token::RBRACE => {
+                    AST::RETURN(Box::new(AST::NULL))
+                }
+                _ => AST::RETURN(Box::new(err_return!(exp(tokens))))
+            }
+        },
         _ => { AST::ERR("expect \"continue\" !".to_string(),tokens.get_line()) },
     }
 }
