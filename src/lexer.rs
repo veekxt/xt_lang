@@ -127,7 +127,7 @@ fn is_iden(c:char) -> bool {
 
 fn is_num_start(c:char) -> bool {
     match c {
-        '1'...'9' => true,
+        '0'...'9' => true,
         _ => false,
     }
 }

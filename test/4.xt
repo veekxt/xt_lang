@@ -1,7 +1,22 @@
 
-var s = 5
 
-var b =8
+# 输出100以内的素数
 
-d = s+b
-"dgf
+
+var j = 2
+var i = 2
+
+while j <= 100
+{
+    i = 2
+    while(i<j)
+    {
+        if j%i == 0
+        {
+            break
+        }
+        i=i+1
+    }
+    if(i==j){print(j," ")}
+    j=j-(-1)
+}
