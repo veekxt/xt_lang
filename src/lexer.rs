@@ -268,6 +268,7 @@ impl LineChars {
                                             tmp_str.push(c2);
                                         }
                                     }else{
+                                        self.i -= 1;
                                         break;
                                     }
                                     is_float = true;
@@ -372,18 +373,21 @@ impl LineChars {
                         '}' => { Some(Token::RBRACE) },
                         ',' => { Some(Token::COMMA) },
                         '.' => { Some(Token::DOT) },
-                        '\n'=> { 
-                                    self.line+=1;
+                        '\n'=> {
+                                    let mut lines = 0;
+                                    lines+=1;
                                     while let Some(next) = self.now_char() {
                                         if next=='\n' {
                                             self.i+=1;
-                                            self.line+=1;
+                                            lines+=1;
                                         }
                                         else {
                                             break;
                                         }
                                     }
-                                    Some(Token::LF) 
+                                    let tmp = (Some(Token::LF),self.line);
+                                    self.line+=lines;
+                                    return tmp;
                                },
                          _  => { Some(Token::ERR("unknown token!".to_string())) },
                     }

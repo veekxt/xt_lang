@@ -1,15 +1,26 @@
 
-#test if parser
-#
-#if a > b {
-#    print("a biger")
-#}
-#else {
-#    print(b-a)
-#}
-#
-while s<m {
-    kk-ss
-    break
-    continue
+
+# test if 
+# test while
+# test {   }
+
+if a > b {
+    while (c+d) {
+        if(e) b else f
+        while g==h 
+        {
+            print(i,j)
+        }
+    }
+}
+{
+1
+    {
+    2
+        {
+            3+7
+        }
+    3
+    }
+4
 }

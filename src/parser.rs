@@ -202,7 +202,7 @@ impl AST {
                 print!("continue");
             },
             AST::ERR(ref s,ref line) => {
-                print!("line {}:parser error:{}",line,s);
+                println!("line {}:parser error:{}",line,s);
             },
             _ => {print!("todo:unknown");},
         }
@@ -252,7 +252,6 @@ macro_rules! option {
                 _ =>{break;},
             }
         }
-
     )
 }
 
@@ -431,6 +430,15 @@ impl status {
     }
 }
 
+fn goto_next_line(tokens:&mut StatusVec<(Token,usize)>) {
+    loop {
+        match  tokens.get(0,0) {
+            Token::LF | Token::LAST => {break;}
+            _ => {tokens.i+=1;}
+        }
+    }
+}
+
 pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
     option!(tokens,Token::LF);
     match  tokens.get(0,0) {
@@ -438,7 +446,7 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST 
             sta.in_stmt += 1;
             tokens.i+=1;
             option!(tokens,Token::LF);
-            let tmp = stmt(tokens,sta);
+            let tmp = err_return!(stmt(tokens,sta));
             option!(tokens,Token::LF);
             parser_expect!(tokens,Token::RBRACE,"stmt-block lost a \"}\"");
             sta.in_stmt -= 1;
@@ -489,21 +497,38 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST 
     }
 }
 
+macro_rules! add_stmt {
+    ($tokens:ident,$vec:ident,$ast:expr) => (
+        {
+            let a = $ast;
+            match a {
+                AST::ERR(_,_) => {
+                    a.print(0);
+                    goto_next_line($tokens);
+                }
+                _ => {$vec.push(a);}
+            }
+        }
+    )
+}
+
+
+
 pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
     let mut stmt_vec:Vec<AST> = Vec::new();
     option!(tokens,Token::LF);
-    stmt_vec.push(err_return!(single_stmt(tokens,sta)));
+    add_stmt!(tokens,stmt_vec,single_stmt(tokens,sta));
     loop {
         match tokens.get(0,0) {
             Token::LF => {
                 tokens.i+=1;
                 match tokens.get(0,0) {
-                    Token::LAST => {}
-                    _ => {stmt_vec.push(err_return!(single_stmt(tokens,sta)));}
+                    Token::RBRACE | Token::LAST => {}
+                    _ => {add_stmt!(tokens,stmt_vec,single_stmt(tokens,sta));}
                 }
             }
             Token::LBRACE => {
-                stmt_vec.push(err_return!(single_stmt(tokens,sta)));
+                add_stmt!(tokens,stmt_vec,single_stmt(tokens,sta));
             }
             Token::LAST => {
                 stmt_vec.push(AST::END);
@@ -512,11 +537,13 @@ pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
             Token::RBRACE => {
                 if sta.in_stmt>0 {break;}
                 else {
-                    return AST::ERR("find \"}\" but \"{\" miss".to_string(),tokens.get_line());
+                    add_stmt!(tokens,stmt_vec,AST::ERR("find \"}\" but \"{\" miss".to_string(),tokens.get_line()));
+                    //return AST::ERR("find \"}\" but \"{\" miss".to_string(),tokens.get_line());
                 }
             }
             _ => {
-                return AST::ERR("expect a new line!".to_string(),tokens.get_line());
+                add_stmt!(tokens,stmt_vec,AST::ERR("expect a new line!".to_string(),tokens.get_line()));
+                //return AST::ERR("expect a new line!".to_string(),tokens.get_line());
             }
         }
     }
@@ -528,7 +555,6 @@ pub fn stmt_if(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
     let condition = err_return!(exp(tokens));
     option!(tokens,Token::LF);
     let stmt = err_return!(single_stmt(tokens,sta));
-    option!(tokens,Token::LF);
     let mut else_stmt = AST::NULL;
     match tokens.get(0,0) {
         Token::ELSE => {
@@ -618,58 +644,58 @@ pub fn call(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 }
 
 pub fn a_bool(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,1);
+    let t = tokens.get(0,0);
     match t {
-        Token::TRUE => { AST::TRUE },
-        Token::FALSE => { AST::FALSE },
+        Token::TRUE => { tokens.i+=1; AST::TRUE },
+        Token::FALSE => { tokens.i+=1; AST::FALSE },
         _ => { AST::ERR("expect \"true\" or \"false\"".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_int(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,1);
+    let t = tokens.get(0,0);
     match t {
-        Token::INT(s) => { AST::INT(s) },
+        Token::INT(s) => { tokens.i+=1; AST::INT(s) },
         _ => { AST::ERR("expect int !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_float(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,1);
+    let t = tokens.get(0,0);
     match t {
-        Token::FLOAT(s) => { AST::FLOAT(s) },
+        Token::FLOAT(s) => { tokens.i+=1; AST::FLOAT(s) },
         _ => { AST::ERR("expect float !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_str(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,1);
+    let t = tokens.get(0,0);
     match t {
-        Token::STR(s) => { AST::STR(s) },
+        Token::STR(s) => { tokens.i+=1; AST::STR(s) },
         _ => { AST::ERR("expect str !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_iden(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,1);
+    let t = tokens.get(0,0);
     match t {
-        Token::IDEN(s) => {  AST::IDEN(s) },
+        Token::IDEN(s) => { tokens.i+=1; AST::IDEN(s) },
         _ => { AST::ERR("expect identifier !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_brk(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,1);
+    let t = tokens.get(0,0);
     match t {
-        Token::BREAK => { AST::BREAK },
+        Token::BREAK => { tokens.i+=1; AST::BREAK },
         _ => { AST::ERR("expect \"break\"".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_ctn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,1);
+    let t = tokens.get(0,0);
     match t {
-        Token::CONTINUE => { AST::CONTINUE },
+        Token::CONTINUE => { tokens.i+=1; AST::CONTINUE },
         _ => { AST::ERR("expect \"continue\" !".to_string(),tokens.get_line()) },
     }
 }
