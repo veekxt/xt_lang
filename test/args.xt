@@ -20,3 +20,10 @@ def s(a,b=8,c=9) {
 }
 
 def s2(){}
+
+while a {
+   while b {
+            break
+   }
+   break
+}

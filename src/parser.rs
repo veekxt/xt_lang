@@ -1,5 +1,4 @@
 use lexer::*;
-use err_status;
 
 #[derive(Clone)]
 pub enum AST {
@@ -50,7 +49,7 @@ impl AST {
         let mut q_left:&AST = &AST::NULL;
         let mut q_right:&AST = &AST::NULL;
         for _ in 0..n {
-            print!("    ");
+            print!("   ");
         }
         match *self {
             AST::INT(ref s) => {
@@ -265,6 +264,15 @@ macro_rules! err_return {
     )
 }
 
+macro_rules! err_return2 {
+    ($fn_exp:expr) => (
+        match $fn_exp {
+            AST::ERR(s,line) => { return AST::ERR(s,line); },
+            _ => {},
+        }
+    )
+}
+
 macro_rules! parser_expect {
     ($tokens:ident,$token:pat,$mess:expr) => (
         match $tokens.get(0,0) {
@@ -449,11 +457,12 @@ pub struct Status {
     in_loop:isize,
     in_stmt:isize,
     in_fn:isize,
+    err:bool,
 }
 
 impl Status {
-    pub fn new(in_if:isize,in_loop:isize,in_stmt:isize,in_fn:isize) -> Status{
-        Status{in_if:in_if,in_loop:in_loop,in_stmt:in_stmt,in_fn:in_fn}
+    pub fn new(err:bool,in_if:isize,in_loop:isize,in_stmt:isize,in_fn:isize) -> Status{
+        Status{err:err,in_if:in_if,in_loop:in_loop,in_stmt:in_stmt,in_fn:in_fn}
     }
 }
 
@@ -473,7 +482,8 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST 
             sta.in_stmt += 1;
             tokens.i+=1;
             option!(tokens,Token::LF);
-            let tmp = err_return!(stmt(tokens,sta));
+            let (tmp,_) = stmt(tokens,sta);
+            err_return2!(tmp);
             option!(tokens,Token::LF);
             parser_expect!(tokens,Token::RBRACE,"stmt-block lost a \"}\"");
             sta.in_stmt -= 1;
@@ -543,25 +553,24 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST 
     }
 }
 
-macro_rules! add_stmt {
-    ($tokens:ident,$vec:ident,$ast:expr) => (
-        {
-            let a = $ast;
-            match a {
-                AST::ERR(_,_) => {
-                    unsafe { err_status::parser_err = true; }
-                    a.print(0);
-                    goto_next_line($tokens);
+pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> (AST,bool) {
+    let mut err = false;
+    macro_rules! add_stmt {
+        ($tokens:ident,$vec:ident,$ast:expr) => (
+            {
+                let a = $ast;
+                match a {
+                    AST::ERR(_,_) => {
+                        err = true;
+                        a.print(0);
+                        goto_next_line($tokens);
+                    }
+                    _ => {$vec.push(a);}
                 }
-                _ => {$vec.push(a);}
             }
-        }
-    )
-}
-
-
-
-pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
+        )
+    }
+    
     let mut stmt_vec:Vec<AST> = Vec::new();
     option!(tokens,Token::LF);
     add_stmt!(tokens,stmt_vec,single_stmt(tokens,sta));
@@ -594,7 +603,7 @@ pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
             }
         }
     }
-    AST::STMT(stmt_vec)
+    (AST::STMT(stmt_vec),err)
 }
 
 pub fn stmt_if(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {

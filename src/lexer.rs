@@ -4,7 +4,6 @@ use std::path::Path;
 use std::collections::HashMap;
 use std::fmt;
 use std::str::FromStr;
-use err_status;
 
 #[derive(Clone)]
 pub enum Token{
@@ -113,6 +112,7 @@ pub struct LineChars{
     pub i:usize,
     pub line:usize,
     pub vec_data:Vec<char>,
+    pub keywords:HashMap<&'static str,Token>,
 }
 
 fn is_iden_start(c:char) -> bool {
@@ -239,8 +239,7 @@ impl LineChars {
                             _ => {break;},
                         }
                     }
-                    let keywords = get_keywords();
-                    match keywords.get(&*tmp_str) {
+                    match self.keywords.get(&*tmp_str) {
                         Some(k) => {
                             rs = Some(k.clone());
                         },
@@ -432,18 +431,19 @@ pub fn get_char_vec(path:&Path) -> Vec<char> {
     str_vec
 }
 
-pub fn get_tokens_from(path:&Path) -> StatusVec<(Token,usize)>{
+pub fn get_tokens_from(path:&Path) -> (StatusVec<(Token,usize)>,bool){
+    let mut err = false;
     let char_vec = get_char_vec(path);
     let mut tokens: Vec<(Token,usize)> = Vec::new();
-    let mut read_token = LineChars{i:0,line:1,vec_data:char_vec};
+    let mut read_token = LineChars{i:0, line:1, vec_data:char_vec, keywords:get_keywords()};
     loop {
         let (t,line) = read_token.next();
         match t {
             Some(to) => {
                 tokens.push((to.clone(),line));
                 match to {
-                    Token::ERR(ref s) => unsafe {
-                        err_status::lexer_err=true;
+                    Token::ERR(ref s) => {
+                        err=true;
                         println!("line {}:lexer error:{}",line,s);
                     },
                     _ => {},
@@ -452,5 +452,5 @@ pub fn get_tokens_from(path:&Path) -> StatusVec<(Token,usize)>{
             None => {break;},
         }
     }
-    StatusVec::<(Token,usize)> { i: 0, vec_data: tokens }
+    (StatusVec::<(Token,usize)> { i: 0, vec_data: tokens }, err)
 }
