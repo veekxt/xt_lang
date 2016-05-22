@@ -1,4 +1,5 @@
 use lexer::*;
+use err_status;
 
 pub enum AST {
     STMT(Vec<AST>),
@@ -11,8 +12,7 @@ pub enum AST {
     ARGS(Vec<AST>),
     INDEX{exp:Box<AST>,index:Box<AST>},
     ASSIGN{ left_value:Box<AST>, exp: Box<AST> },
-    
-    COMMA,
+
     PLUS{ left:Box<AST>, right: Box<AST> },
     MINUS{ left:Box<AST>, right: Box<AST> },
     NEG(Box<AST>),
@@ -45,7 +45,7 @@ impl AST {
     pub fn print(&self,n:usize) {
         let mut q_left:&AST = &AST::NULL;
         let mut q_right:&AST = &AST::NULL;
-        for i in 0..n {
+        for _ in 0..n {
             print!("    ");
         }
         match *self {
@@ -66,6 +66,16 @@ impl AST {
             },
             AST::END => {
                 print!("stmt-end");
+            },
+            AST::ASSIGN{ref left_value,ref exp} => {
+                print!("=");
+                q_left = (*left_value).as_ref();
+                q_right = (*exp).as_ref();
+            },
+            AST::VAR{ref iden,ref exp} => {
+                print!("var");
+                q_left = (*iden).as_ref();
+                q_right = (*exp).as_ref();
             },
             AST::PLUS{ref left,ref right} => {
                 print!("+");
@@ -204,7 +214,6 @@ impl AST {
             AST::ERR(ref s,ref line) => {
                 println!("line {}:parser error:{}",line,s);
             },
-            _ => {print!("todo:unknown");},
         }
         match *q_left {
             AST::NULL => {},
@@ -257,7 +266,6 @@ macro_rules! option {
 
 pub fn exp(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut eroot=err_return!(exp1(tokens));
-    let mut eright:Box<AST>;
     loop {
         match tokens.get(0,0) {
             Token::ANDAND => {
@@ -278,7 +286,6 @@ pub fn exp(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 
 pub fn exp1(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut eroot=err_return!(exp2(tokens));
-    let mut eright:Box<AST>;
     loop {
         match tokens.get(0,0) {
             Token::LT=> {
@@ -319,7 +326,6 @@ pub fn exp1(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 
 pub fn exp2(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut eroot=err_return!(exp3(tokens));
-    let mut eright:Box<AST>;
     loop {
         match tokens.get(0,0) {
             Token::PLUS => {
@@ -340,7 +346,6 @@ pub fn exp2(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 
 pub fn exp3(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     let mut eroot=err_return!(exp4(tokens));
-    let mut eright:Box<AST>;
     loop {
         match tokens.get(0,0) {
             Token::STAR => {
@@ -418,15 +423,15 @@ pub fn exp5(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 }
 
 #[derive(Clone,Copy)]
-pub struct status {
+pub struct Status {
     in_if:isize,
     in_loop:isize,
     in_stmt:isize,
 }
 
-impl status {
-    pub fn new(in_if:isize,in_loop:isize,in_stmt:isize) -> status{
-        status{in_if:in_if,in_loop:in_loop,in_stmt:in_stmt}
+impl Status {
+    pub fn new(in_if:isize,in_loop:isize,in_stmt:isize) -> Status{
+        Status{in_if:in_if,in_loop:in_loop,in_stmt:in_stmt}
     }
 }
 
@@ -439,7 +444,7 @@ fn goto_next_line(tokens:&mut StatusVec<(Token,usize)>) {
     }
 }
 
-pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
+pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
     option!(tokens,Token::LF);
     match  tokens.get(0,0) {
         Token::LBRACE => {
@@ -486,7 +491,16 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST 
         | Token::FLOAT(_)
         | Token::LPAR
         => {
-            exp(tokens)
+            let first_exp = err_return!(exp(tokens));
+            match tokens.get(0,0) {
+                Token::EQ => {
+                    err_return!(stmt_assign(tokens,true,first_exp))
+                }
+                _ => first_exp
+            }
+        }
+        Token::VAR => {
+            err_return!(stmt_var(tokens))
         }
         Token::LAST => {
             AST::END
@@ -503,6 +517,7 @@ macro_rules! add_stmt {
             let a = $ast;
             match a {
                 AST::ERR(_,_) => {
+                    unsafe { err_status::parser_err = true; }
                     a.print(0);
                     goto_next_line($tokens);
                 }
@@ -514,7 +529,7 @@ macro_rules! add_stmt {
 
 
 
-pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
+pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
     let mut stmt_vec:Vec<AST> = Vec::new();
     option!(tokens,Token::LF);
     add_stmt!(tokens,stmt_vec,single_stmt(tokens,sta));
@@ -550,7 +565,7 @@ pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
     AST::STMT(stmt_vec)
 }
 
-pub fn stmt_if(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
+pub fn stmt_if(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
     parser_expect!(tokens,Token::IF,"expect \"if\"");
     let condition = err_return!(exp(tokens));
     option!(tokens,Token::LF);
@@ -567,17 +582,36 @@ pub fn stmt_if(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
     AST::IF{ exp:Box::new(condition), stmt:Box::new(stmt), else_stmt:Box::new(else_stmt) }
 }
 
+pub fn stmt_assign(tokens:&mut StatusVec<(Token,usize)>,has_left:bool,left:AST) -> AST {
+    //标记：
+    //直接使用exp来parser左值，不合理
+    //比如 3+4 = foo()  这种错误要延迟到解释阶段处理
+    let left_value = if !has_left { err_return!(exp(tokens)) } else { left };
+    parser_expect!(tokens,Token::EQ,"expect a \"=\" !");
+    let right_value = err_return!(exp(tokens));
+    AST::ASSIGN{ left_value:Box::new(left_value), exp:Box::new(right_value) }
+}
 
-pub fn stmt_while(tokens:&mut StatusVec<(Token,usize)>,sta:&mut status) -> AST {
+pub fn stmt_var(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    parser_expect!(tokens,Token::VAR,"expect a \"var\" !");
+    let iden = err_return!(a_iden(tokens));
+    match tokens.get(0,0) {
+        Token::LF => {
+            AST::VAR{ iden:Box::new(iden),exp:Box::new(AST::NULL) }
+        }
+        _ => { 
+            parser_expect!(tokens,Token::EQ,"expect a \"=\" !");
+            AST::VAR{ iden:Box::new(iden), exp:Box::new(err_return!(exp(tokens))) } 
+        }
+    }
+}
+
+pub fn stmt_while(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
     parser_expect!(tokens,Token::WHILE,"expect \"while\"");
     let condition = err_return!(exp(tokens));
     option!(tokens,Token::LF);
     let stmt = err_return!(single_stmt(tokens,sta));
     AST::WHILE{ exp:Box::new(condition), stmt:Box::new(stmt) }
-}
-
-pub fn exp6(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    AST::NULL
 }
 
 pub fn exp_index(tokens:&mut StatusVec<(Token,usize)>) -> AST {
@@ -613,10 +647,10 @@ pub fn exp7(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match t {
         Token::TRUE     =>    { a_bool(tokens) },
         Token::FALSE    =>    { a_bool(tokens) },
-        Token::INT(s)   =>    { a_int(tokens) },
-        Token::FLOAT(s) =>    { a_float(tokens) },
-        Token::STR(s)   =>    { a_str(tokens) },
-        Token::IDEN(s)  =>    { a_iden(tokens) },
+        Token::INT(_)   =>    { a_int(tokens) },
+        Token::FLOAT(_) =>    { a_float(tokens) },
+        Token::STR(_)   =>    { a_str(tokens) },
+        Token::IDEN(_)  =>    { a_iden(tokens) },
         Token::LPAR     => {
             tokens.i+=1;
             let tmp = err_return!(exp(tokens));
@@ -625,22 +659,6 @@ pub fn exp7(tokens:&mut StatusVec<(Token,usize)>) -> AST {
         }
         _ => { AST::ERR("expect min-exp !".to_string(),tokens.get_line()) },
     }
-}
-
-pub fn call(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let mut eroot=err_return!(exp7(tokens));
-    let mut eright:Box<AST>;
-    loop {
-        match tokens.get(0,0) {
-            Token::PLUS => {
-                tokens.i+=1;
-                let left = AST::PLUS{left:Box::new(eroot),right:Box::new(err_return!(exp7(tokens)))};
-                eroot=left;
-            },
-            _ =>{break;},
-        }
-    }
-    eroot
 }
 
 pub fn a_bool(tokens:&mut StatusVec<(Token,usize)>) -> AST {

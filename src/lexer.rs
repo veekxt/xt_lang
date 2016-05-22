@@ -1,5 +1,4 @@
 use std::fs::File;
-use std::io;
 use std::io::prelude::*;
 use std::path::Path;
 use std::collections::HashMap;
@@ -160,7 +159,7 @@ impl StatusVec<(Token,usize)> {
             Token::LAST
         }
         else {
-            let (t,l) = self.vec_data[self.i + i].clone();
+            let (t,_) = self.vec_data[self.i + i].clone();
             self.i += m;
             t
         }
@@ -215,7 +214,7 @@ impl LineChars {
     }
     
     fn next(&mut self) -> (Option<Token>,usize){
-        let mut rs:Option<Token>;
+        let rs:Option<Token>;
         self.goto_useful();
         let mut tmp_str = String::new();
         match self.now_char() {
@@ -282,7 +281,6 @@ impl LineChars {
                     else { Some(Token::INT(isize::from_str(tmp_str.as_ref()).unwrap())) }
                 }
                 else if is_str_start(c) {
-                    let mut is_end = false;
                     self.i+=1;
                     loop {
                         match self.now_char() {
@@ -302,13 +300,14 @@ impl LineChars {
                                         }
                                     }
                                 }
-                                else if c2=='\"' { is_end=true;break; }
+                                else if c2=='\"' { break; }
                                 else {
                                     tmp_str.push(c2);
                                 }
                             },
                             None => { 
-                                rs = Some(Token::ERR("has no end of str \"".to_string()));
+                                return (Some(Token::ERR("has no end of str \"".to_string())),self.line);
+                                //break;
                             },
                         }
                     }
