@@ -702,13 +702,15 @@ pub fn stmt_if(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
     option!(tokens,Token::LF);
     let stmt = err_return!(single_stmt(tokens,sta));
     let mut else_stmt = AST::NULL;
+    let i = tokens.i;
+    option!(tokens,Token::LF);
     match tokens.get(0,0) {
         Token::ELSE => {
             tokens.i+=1;
             option!(tokens,Token::LF);
             else_stmt = err_return!(single_stmt(tokens,sta));
         }
-        _ => {}
+        _ => { tokens.i = i; }
     }
     AST::IF{ exp:Box::new(condition), stmt:Box::new(stmt), else_stmt:Box::new(else_stmt) }
 }

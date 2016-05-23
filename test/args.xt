@@ -19,6 +19,9 @@ def s(a,b=8,c=9) {
     return 6-7
 }
 
+
+#dd
+
 def s2(){}
 
 while a {
@@ -31,8 +34,10 @@ while a {
 class a {
     a,
     b,
-    c,
+    c
     def a(a,s) {
+        var s2
+        var s1=s2
         return a+s
     }
     def b(d,f) {
