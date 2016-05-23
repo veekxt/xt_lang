@@ -792,8 +792,7 @@ pub fn exp_default_value(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 }
 
 pub fn exp7(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,0);
-    match t {
+     match  tokens.get(0,0) {
         Token::TRUE     =>    { a_bool(tokens) },
         Token::FALSE    =>    { a_bool(tokens) },
         Token::INT(_)   =>    { a_int(tokens) },
@@ -811,8 +810,7 @@ pub fn exp7(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 }
 
 pub fn a_bool(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,0);
-    match t {
+     match  tokens.get(0,0) {
         Token::TRUE => { tokens.i+=1; AST::TRUE },
         Token::FALSE => { tokens.i+=1; AST::FALSE },
         _ => { AST::ERR("expect \"true\" or \"false\"".to_string(),tokens.get_line()) },
@@ -820,56 +818,49 @@ pub fn a_bool(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 }
 
 pub fn a_int(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,0);
-    match t {
+     match  tokens.get(0,0) {
         Token::INT(s) => { tokens.i+=1; AST::INT(s) },
         _ => { AST::ERR("expect int !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_float(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,0);
-    match t {
+     match  tokens.get(0,0) {
         Token::FLOAT(s) => { tokens.i+=1; AST::FLOAT(s) },
         _ => { AST::ERR("expect float !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_str(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,0);
-    match t {
+     match  tokens.get(0,0) {
         Token::STR(s) => { tokens.i+=1; AST::STR(s) },
         _ => { AST::ERR("expect str !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_iden(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,0);
-    match t {
+     match  tokens.get(0,0) {
         Token::IDEN(s) => { tokens.i+=1; AST::IDEN(s) },
         _ => { AST::ERR("expect identifier !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_brk(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,0);
-    match t {
+     match  tokens.get(0,0) {
         Token::BREAK => { tokens.i+=1; AST::BREAK },
         _ => { AST::ERR("expect \"break\"".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_ctn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,0);
-    match t {
+     match  tokens.get(0,0) {
         Token::CONTINUE => { tokens.i+=1; AST::CONTINUE },
         _ => { AST::ERR("expect \"continue\" !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_rtn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-    let t = tokens.get(0,0);
-    match t {
+     match  tokens.get(0,0) {
         Token::RETURN => { 
             tokens.i+=1;
             match tokens.get(0,0) {
