@@ -546,7 +546,6 @@ pub fn function_list(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match tokens.get(0,0) {
         Token::DEF => {
             funs.push(err_return!(fn_def(tokens,&mut Status::new(false,0,0,0,0))));
-            print!("^^^^^^^^^^^^^^^^^^");
             loop{
                 option!(tokens,Token::LF);
                 match tokens.get(0,0) {
@@ -758,7 +757,6 @@ pub fn fn_def(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
     parser_expect!(tokens,Token::RPAR,"function arguments must be closed with \")\"");
     sta.in_fn+=1;
     let fun_stmt = err_return!(single_stmt(tokens,sta));
-    println!("^^^fuck");
     sta.in_fn-=1;
     AST::DEF { iden:Box::new(fun_name),args:Box::new(fun_args),stmt:Box::new(fun_stmt) }
 }
