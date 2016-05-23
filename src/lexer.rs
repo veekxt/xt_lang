@@ -40,6 +40,7 @@ pub enum Token{
     //关键字
     VAR,
     DEF,
+    CLASS,
     IF,
     ELSE,
     WHILE,
@@ -88,6 +89,7 @@ impl fmt::Display for Token{
             Token::LF           => write!(f, "\\n"),
             Token::VAR          => write!(f, "var"),
             Token::DEF          => write!(f, "def"),
+            Token::CLASS        => write!(f, "class"),
             Token::IF           => write!(f, "if"),
             Token::ELSE         => write!(f, "ELSE"),
             Token::WHILE        => write!(f, "while"),
@@ -405,6 +407,7 @@ pub fn get_keywords() -> HashMap<&'static str,Token> {
     let mut keywords = HashMap::new();
     keywords.insert("var",Token::VAR);
     keywords.insert("def",Token::DEF);
+    keywords.insert("class",Token::CLASS);
     keywords.insert("if",Token::IF);
     keywords.insert("else",Token::ELSE);
     keywords.insert("while",Token::WHILE);

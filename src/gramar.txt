@@ -58,3 +58,10 @@ while-stmt  = 'while' exp stmt
 fun-def   =   'def' iden '(' def_args ')' stmt
 
 def_args   = *( iden *( ',' iden  ) *( ',' de_val  ) )
+
+;属性暂时不允许默认值
+class-def  =  'class' iden '{' attribute_list  function_list '}'
+
+attribute_list  =  [ iden *( ','['\n'] iden ) [','] '\n' ]
+
+function_list   = *fun-def

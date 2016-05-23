@@ -27,3 +27,16 @@ while a {
    }
    break
 }
+
+class a {
+    a,
+    b,
+    c,
+    def a(a,s) {
+        return a+s
+    }
+    def b(d,f) {
+        return d+f
+        "he" - "s"
+    }
+}

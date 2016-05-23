@@ -11,6 +11,9 @@ pub enum AST {
     RETURN( Box<AST> ),
     CALL{ exp: Box<AST>, arg_list: Box<AST> },
     ARGS(Vec<AST>),
+    ATTRS(Vec<AST>),
+    FUNCTIONS(Vec<AST>),
+    CLASS{name:Box<AST>,attrs:Box<AST>, functions:Box<AST> },
     INDEX{exp:Box<AST>,index:Box<AST>},
     ASSIGN{ left_value:Box<AST>, exp: Box<AST> },
     DEVAL{ iden:Box<AST>, val:Box<AST> },
@@ -184,6 +187,30 @@ impl AST {
             },
             AST::ARGS(ref a) => {
                 print!("args");
+                print!("({})",a.len());
+                for i in a {
+                    println!("");
+                    i.print(n+1);
+                }
+            },
+            AST::CLASS{ref name, ref attrs, ref functions} => {
+                println!("class");
+                (*name).as_ref().print(n+1);
+                println!("");
+                (*attrs).as_ref().print(n+1);
+                println!("");
+                (*functions).as_ref().print(n+1);
+            }
+            AST::FUNCTIONS(ref a) => {
+                print!("funcs");
+                print!("({})",a.len());
+                for i in a {
+                    println!("");
+                    i.print(n+1);
+                }
+            },
+            AST::ATTRS(ref a) => {
+                print!("attrs");
                 print!("({})",a.len());
                 for i in a {
                     println!("");
@@ -468,22 +495,85 @@ impl Status {
 
 fn goto_next_line(tokens:&mut StatusVec<(Token,usize)>) {
     loop {
-        match  tokens.get(0,0) {
+       match  tokens.get(0,0) {
             Token::LF | Token::LAST => {break;}
             _ => {tokens.i+=1;}
         }
     }
 }
 
-pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
+pub fn class_def(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    parser_expect!(tokens,Token::CLASS,"class def must be start with a \"class\" keyword !");
+    let name = err_return!(a_iden(tokens));
     option!(tokens,Token::LF);
-    match  tokens.get(0,0) {
+    parser_expect!(tokens,Token::LBRACE,"class-body must be {...}, miss {");
+    option!(tokens,Token::LF);
+    let attr = err_return!(attribute_list(tokens));
+    let func_list = err_return!(function_list(tokens));
+    parser_expect!(tokens,Token::RBRACE,"class-body expect } to end ,note:class-body just has function define or attibutes");
+    AST::CLASS{ name:Box::new(name),attrs:Box::new(attr),functions:Box::new(func_list) }
+}
+
+pub fn attribute_list(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    let mut attrs:Vec<AST> = Vec::new();
+    match tokens.get(0,0) {
+        Token::IDEN(_) => {
+            attrs.push(err_return!(a_iden(tokens)));
+            loop{
+                option!(tokens,Token::LF);
+                match tokens.get(0,0) {
+                    Token::COMMA => {
+                        tokens.i+=1;
+                        option!(tokens,Token::LF);
+                        match tokens.get(0,0) {
+                            Token::IDEN(_) => {
+                                attrs.push(err_return!(a_iden(tokens)));
+                            }
+                            _ => {break;}
+                        }
+                    }
+                    _ => {break;}
+                }
+            }
+        }
+        _ => {}
+    }
+    AST::ATTRS(attrs)
+}
+
+pub fn function_list(tokens:&mut StatusVec<(Token,usize)>) -> AST {
+    let mut funs:Vec<AST> = Vec::new();
+    match tokens.get(0,0) {
+        Token::DEF => {
+            funs.push(err_return!(fn_def(tokens,&mut Status::new(false,0,0,0,0))));
+            print!("^^^^^^^^^^^^^^^^^^");
+            loop{
+                option!(tokens,Token::LF);
+                match tokens.get(0,0) {
+                    Token::DEF => {
+                        funs.push(err_return!(fn_def(tokens,&mut Status::new(false,0,0,0,0))));
+                    }
+                    _ => { break; }
+                }
+            }
+        }
+        _ => {}
+    }
+    AST::FUNCTIONS(funs)
+}
+
+pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
+   option!(tokens,Token::LF);
+   match  tokens.get(0,0) {
         Token::LBRACE => {
             sta.in_stmt += 1;
             tokens.i+=1;
             option!(tokens,Token::LF);
-            let (tmp,_) = stmt(tokens,sta);
-            err_return2!(tmp);
+            let (tmp,err) = stmt(tokens,sta);
+            if err {
+                return AST::ERR("stmt-block has some error".to_string(),0);
+            }
+            //err_return2!(tmp);
             option!(tokens,Token::LF);
             parser_expect!(tokens,Token::RBRACE,"stmt-block lost a \"}\"");
             sta.in_stmt -= 1;
@@ -497,6 +587,9 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST 
         }
         Token::IF => {
             stmt_if(tokens,sta)
+        }
+        Token::CLASS => {
+            class_def(tokens)
         }
         Token::WHILE => {
             sta.in_loop += 1;
@@ -536,13 +629,13 @@ pub fn single_stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST 
             let first_exp = err_return!(exp(tokens));
             match tokens.get(0,0) {
                 Token::EQ => {
-                    err_return!(stmt_assign(tokens,true,first_exp))
+                    stmt_assign(tokens,true,first_exp)
                 }
                 _ => first_exp
             }
         }
         Token::VAR => {
-            err_return!(stmt_var(tokens))
+            stmt_var(tokens)
         }
         Token::LAST => {
             AST::END
@@ -560,9 +653,9 @@ pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> (AST,bool) 
             {
                 let a = $ast;
                 match a {
-                    AST::ERR(_,_) => {
+                    AST::ERR(_,line) => {
                         err = true;
-                        a.print(0);
+                        if line!=0 {a.print(0)};
                         goto_next_line($tokens);
                     }
                     _ => {$vec.push(a);}
@@ -594,12 +687,10 @@ pub fn stmt(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> (AST,bool) 
                 if sta.in_stmt>0 {break;}
                 else {
                     add_stmt!(tokens,stmt_vec,AST::ERR("find \"}\" but \"{\" miss".to_string(),tokens.get_line()));
-                    //return AST::ERR("find \"}\" but \"{\" miss".to_string(),tokens.get_line());
                 }
             }
             _ => {
                 add_stmt!(tokens,stmt_vec,AST::ERR("expect a new line!".to_string(),tokens.get_line()));
-                //return AST::ERR("expect a new line!".to_string(),tokens.get_line());
             }
         }
     }
@@ -667,6 +758,7 @@ pub fn fn_def(tokens:&mut StatusVec<(Token,usize)>,sta:&mut Status) -> AST {
     parser_expect!(tokens,Token::RPAR,"function arguments must be closed with \")\"");
     sta.in_fn+=1;
     let fun_stmt = err_return!(single_stmt(tokens,sta));
+    println!("^^^fuck");
     sta.in_fn-=1;
     AST::DEF { iden:Box::new(fun_name),args:Box::new(fun_args),stmt:Box::new(fun_stmt) }
 }
@@ -792,7 +884,7 @@ pub fn exp_default_value(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 }
 
 pub fn exp7(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-     match  tokens.get(0,0) {
+    match  tokens.get(0,0) {
         Token::TRUE     =>    { a_bool(tokens) },
         Token::FALSE    =>    { a_bool(tokens) },
         Token::INT(_)   =>    { a_int(tokens) },
@@ -810,7 +902,7 @@ pub fn exp7(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 }
 
 pub fn a_bool(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-     match  tokens.get(0,0) {
+    match  tokens.get(0,0) {
         Token::TRUE => { tokens.i+=1; AST::TRUE },
         Token::FALSE => { tokens.i+=1; AST::FALSE },
         _ => { AST::ERR("expect \"true\" or \"false\"".to_string(),tokens.get_line()) },
@@ -818,49 +910,49 @@ pub fn a_bool(tokens:&mut StatusVec<(Token,usize)>) -> AST {
 }
 
 pub fn a_int(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-     match  tokens.get(0,0) {
+    match  tokens.get(0,0) {
         Token::INT(s) => { tokens.i+=1; AST::INT(s) },
         _ => { AST::ERR("expect int !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_float(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-     match  tokens.get(0,0) {
+    match  tokens.get(0,0) {
         Token::FLOAT(s) => { tokens.i+=1; AST::FLOAT(s) },
         _ => { AST::ERR("expect float !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_str(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-     match  tokens.get(0,0) {
+    match  tokens.get(0,0) {
         Token::STR(s) => { tokens.i+=1; AST::STR(s) },
         _ => { AST::ERR("expect str !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_iden(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-     match  tokens.get(0,0) {
+    match  tokens.get(0,0) {
         Token::IDEN(s) => { tokens.i+=1; AST::IDEN(s) },
         _ => { AST::ERR("expect identifier !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_brk(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-     match  tokens.get(0,0) {
+    match  tokens.get(0,0) {
         Token::BREAK => { tokens.i+=1; AST::BREAK },
         _ => { AST::ERR("expect \"break\"".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_ctn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-     match  tokens.get(0,0) {
+    match  tokens.get(0,0) {
         Token::CONTINUE => { tokens.i+=1; AST::CONTINUE },
         _ => { AST::ERR("expect \"continue\" !".to_string(),tokens.get_line()) },
     }
 }
 
 pub fn a_rtn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
-     match  tokens.get(0,0) {
+    match  tokens.get(0,0) {
         Token::RETURN => { 
             tokens.i+=1;
             match tokens.get(0,0) {
