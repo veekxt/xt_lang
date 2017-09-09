@@ -16,3 +16,4 @@ Cargo.lock
 
 #my own
 *.swp
+.idea

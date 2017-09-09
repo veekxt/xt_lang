@@ -901,6 +901,7 @@ pub fn exp7(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     }
 }
 
+// bool value
 pub fn a_bool(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match  tokens.get(0,0) {
         Token::TRUE => { tokens.i+=1; AST::TRUE },
@@ -909,6 +910,7 @@ pub fn a_bool(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     }
 }
 
+// int value
 pub fn a_int(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match  tokens.get(0,0) {
         Token::INT(s) => { tokens.i+=1; AST::INT(s) },
@@ -916,6 +918,7 @@ pub fn a_int(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     }
 }
 
+// float value
 pub fn a_float(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match  tokens.get(0,0) {
         Token::FLOAT(s) => { tokens.i+=1; AST::FLOAT(s) },
@@ -923,6 +926,7 @@ pub fn a_float(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     }
 }
 
+// string
 pub fn a_str(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match  tokens.get(0,0) {
         Token::STR(s) => { tokens.i+=1; AST::STR(s) },
@@ -930,6 +934,7 @@ pub fn a_str(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     }
 }
 
+// identifier
 pub fn a_iden(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match  tokens.get(0,0) {
         Token::IDEN(s) => { tokens.i+=1; AST::IDEN(s) },
@@ -937,6 +942,7 @@ pub fn a_iden(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     }
 }
 
+// "break" statement
 pub fn a_brk(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match  tokens.get(0,0) {
         Token::BREAK => { tokens.i+=1; AST::BREAK },
@@ -944,6 +950,7 @@ pub fn a_brk(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     }
 }
 
+// "continue" statement
 pub fn a_ctn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match  tokens.get(0,0) {
         Token::CONTINUE => { tokens.i+=1; AST::CONTINUE },
@@ -951,6 +958,7 @@ pub fn a_ctn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     }
 }
 
+// "return" statement
 pub fn a_rtn(tokens:&mut StatusVec<(Token,usize)>) -> AST {
     match  tokens.get(0,0) {
         Token::RETURN => { 

@@ -7,11 +7,11 @@ use std::str::FromStr;
 
 #[derive(Clone)]
 pub enum Token{
-    //字面量
+    // literal
     STR(String),
     INT(isize),
     FLOAT(f64),
-    //运算符号
+    // operational character
     PLUS,
     MINUS,
     STAR,
@@ -25,7 +25,7 @@ pub enum Token{
     NE,
     ANDAND,
     OROR,
-    //其他符号
+    // other character
     EQ,
     COMMA,
     DOT,
@@ -37,7 +37,7 @@ pub enum Token{
     RBRACE,
     IDEN(String),
     LF,
-    //关键字
+    // keyword
     VAR,
     DEF,
     CLASS,
@@ -50,10 +50,10 @@ pub enum Token{
     NOT,
     TRUE,
     FALSE,
-    //FOR,
-    //结束
+    // FOR //(TODO?)
+    // end
     LAST,
-    //错误
+    // mistake
     ERR(String),
 }
 
@@ -225,7 +225,7 @@ impl LineChars {
         let mut tmp_str = String::new();
         match self.now_char() {
             Some(c) => {
-                //关键字和标识符
+                // keyword or identifier
                 if is_iden_start(c) {
                     self.i += 1;
                     tmp_str.push(c);
@@ -321,7 +321,7 @@ impl LineChars {
                 else {
                     self.i += 1;
                     rs = match c {
-                        //运算符
+                        // operational character
                         '+' => { Some(Token::PLUS) },
                         '-' => { Some(Token::MINUS) },
                         '*' => { Some(Token::STAR) },
