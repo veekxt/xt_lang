@@ -17,6 +17,7 @@ fn main(){
             println!("Tokens END");
         }
         if !lexer_err {
+            println!("Parser :");
             let (ast,parser_err) = stmt(&mut tokens,&mut parser::Status::new(false,0,0,0,0));
             if !parser_err {
                 ast.print(0);

@@ -403,7 +403,7 @@ impl LineChars {
     }
 }
 
-pub fn get_keywords() -> HashMap<&'static str,Token> {
+fn get_keywords() -> HashMap<&'static str,Token> {
     let mut keywords = HashMap::new();
     keywords.insert("var",Token::VAR);
     keywords.insert("def",Token::DEF);
@@ -418,6 +418,10 @@ pub fn get_keywords() -> HashMap<&'static str,Token> {
     keywords.insert("true",Token::TRUE);
     keywords.insert("false",Token::FALSE);
     keywords
+}
+
+pub fn init_lexer_context() -> (HashMap<&'static str,Token>, ){
+    (get_keywords(), )
 }
 
 pub fn get_char_vec(path:&Path) -> Vec<char> {
@@ -438,7 +442,8 @@ pub fn get_tokens_from(path:&Path) -> (StatusVec<(Token,usize)>,bool){
     let mut err = false;
     let char_vec = get_char_vec(path);
     let mut tokens: Vec<(Token,usize)> = Vec::new();
-    let mut read_token = LineChars{i:0, line:1, vec_data:char_vec, keywords:get_keywords()};
+    let (keywords, ) = init_lexer_context();
+    let mut read_token = LineChars{i:0, line:1, vec_data:char_vec, keywords:keywords };
     loop {
         let (t,line) = read_token.next();
         match t {
