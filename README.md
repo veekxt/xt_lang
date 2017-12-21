@@ -1,9 +1,13 @@
 tmp rep
 
-// a dynamically and strongly typed program language interpreter ,一个动态强类型脚本语言解释器
+// A dynamically and strongly typed program language interpreter
 
-a interpreter write by rust-lang
+A interpreter write by rust-lang
 
-will be rename when release 1.0.0
+Will be rename when release 1.0.0
 
-very early stage（now：simple parser）
+Very early stage（now：simple parser）, Use:
+
+    cargo run
+
+to display a tested AST.
