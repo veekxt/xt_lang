@@ -34,3 +34,13 @@ pub fn new_int(i: i64) -> Box<XtValue> {
     };
     Box::new(val)
 }
+
+pub fn new_bool(i: bool) -> Box<XtValue> {
+    let mut val = XtValue {
+        id: 0,
+        xt_type: { XtValueType { name: String::from("__bool__") } },
+        attribute: { HashMap::new() },
+        method: { HashMap::new() },
+    };
+    Box::new(val)
+}

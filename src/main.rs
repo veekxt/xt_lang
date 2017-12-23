@@ -10,7 +10,6 @@ use std::path::Path;
 
 fn main() {
     {
-
         let (mut tokens, lexer_err) = get_tokens_from(Path::new("test/args.xt"));
 //        {
 //            println!("Tokens :");
@@ -22,11 +21,14 @@ fn main() {
 //        }
         if !lexer_err {
             println!("Parser :");
-            let (ast, parser_err) = stmt(&mut tokens, &mut parser::Status::new(false, 0, 0, 0, 0));
-            if !parser_err {
-                ast.print(0);
-                println!("\nInterpreter :");
-                interprete(ast);
+            let ast_result = stmt(&mut tokens, &mut parser::Status::new(false, 0, 0, 0, 0));
+            match ast_result {
+                Ok(ast) => {
+                    ast.print(0);
+                    println!("\nInterpreter :");
+                    interprete(ast);
+                }
+                Err(err) => {}
             }
         }
     }

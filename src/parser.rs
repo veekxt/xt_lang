@@ -568,15 +568,19 @@ pub fn single_stmt(tokens: &mut StatusVec<(Token, usize)>, sta: &mut Status) -> 
             sta.in_stmt += 1;
             tokens.i += 1;
             option!(tokens,Token::LF);
-            let (tmp, err) = stmt(tokens, sta);
-            if err {
-                return AST::ERR("stmt-block has some error".to_string(), 0);
+            let tmp = stmt(tokens, sta);
+            match tmp {
+                Err(err) => {
+                    return AST::ERR("stmt-block has some error".to_string(), 0);
+                }
+                Ok(ast) => {
+                    //err_return2!(tmp);
+                    option!(tokens,Token::LF);
+                    parser_expect!(tokens,Token::RBRACE,"stmt-block lost a \"}\"");
+                    sta.in_stmt -= 1;
+                    ast
+                }
             }
-            //err_return2!(tmp);
-            option!(tokens,Token::LF);
-            parser_expect!(tokens,Token::RBRACE,"stmt-block lost a \"}\"");
-            sta.in_stmt -= 1;
-            tmp
         }
         Token::RBRACE => {
             AST::END
@@ -645,7 +649,7 @@ pub fn single_stmt(tokens: &mut StatusVec<(Token, usize)>, sta: &mut Status) -> 
     }
 }
 
-pub fn stmt(tokens: &mut StatusVec<(Token, usize)>, sta: &mut Status) -> (AST, bool) {
+pub fn stmt(tokens: &mut StatusVec<(Token, usize)>, sta: &mut Status) -> Result<AST, bool> {
     let mut err = false;
     macro_rules! add_stmt {
         ($tokens:ident,$vec:ident,$ast:expr) => (
@@ -692,7 +696,7 @@ pub fn stmt(tokens: &mut StatusVec<(Token, usize)>, sta: &mut Status) -> (AST, b
             }
         }
     }
-    (AST::STMT(stmt_vec), err)
+    if (err) { Err(err) } else { Ok(AST::STMT(stmt_vec)) }
 }
 
 pub fn stmt_if(tokens: &mut StatusVec<(Token, usize)>, sta: &mut Status) -> AST {
