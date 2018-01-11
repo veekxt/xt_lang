@@ -10,4 +10,4 @@ Very early stage（now：simple parser）, Use:
 
     cargo run
 
-to display a tested AST.
+to test a AST.
