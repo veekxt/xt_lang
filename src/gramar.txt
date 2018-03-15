@@ -22,7 +22,7 @@ exp7    = IDEN / INT / FLOAT / STR
 
 index   = '[' exp ']'
 
-call    = '(' args ')'
+call  = '(' exp_args ')'
 
 exp_args    = *( exp *( ',' exp  ) *( ',' de_val  ) )
 

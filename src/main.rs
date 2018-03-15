@@ -26,7 +26,7 @@ fn main() {
                 Ok(ast) => {
                     ast.print(0);
                     println!("\nInterpreter :");
-                    interprete(ast);
+                    run(ast);
                 }
                 Err(err) => {}
             }

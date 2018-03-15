@@ -12,7 +12,6 @@ pub struct XtValueType {
 //    xtype:XtValue,
 //}
 
-
 pub enum XtFunction {
     SysFunction(fn(&XtValue) -> ()),
     DefFunction(Box<AST>),
