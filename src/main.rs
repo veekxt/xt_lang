@@ -10,7 +10,7 @@ use std::path::Path;
 
 fn main() {
     {
-        let (mut tokens, lexer_err) = get_tokens_from(Path::new("test/args.xt"));
+        let (mut tokens, lexer_err) = get_tokens_from(Path::new("test/tmp.xt"));
 //        {
 //            println!("Tokens :");
 //            for &(ref t, ref l) in &tokens.vec_data {
