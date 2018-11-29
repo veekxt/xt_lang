@@ -50,7 +50,7 @@ pub enum Token {
     NOT,
     TRUE,
     FALSE,
-    // FOR //(TODO?)
+    // FOR
     // end
     LAST,
     // mistake
@@ -435,7 +435,7 @@ pub fn get_tokens_from(path: &Path) -> (StatusVec<(Token, usize)>, bool) {
     let char_vec = get_char_vec(path);
     let mut tokens: Vec<(Token, usize)> = Vec::new();
     let (keywords, ) = init_lexer_context();
-    let mut read_token = LineChars { i: 0, line: 1, vec_data: char_vec, keywords: keywords };
+    let mut read_token = LineChars { i: 0, line: 1, vec_data: char_vec, keywords };
     loop {
         let (t, line) = read_token.next();
         match t {

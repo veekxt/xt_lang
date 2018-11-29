@@ -80,8 +80,7 @@ fn run_var(context: &mut Context, iden: &Box<AST>, exp: &Box<AST>) -> Result<Stm
             // TODO left node is not string
         }
     } else {
-        // TODO table len is 0
-        // No, symbol table always more than 0
+
     }
     Result::Ok(StmtInfo::OTHER)
 }
@@ -106,7 +105,7 @@ pub fn run(ast: AST) -> Result<isize, isize> {
 
     let mut symbol_table: SymbolTable = Vec::new();
     symbol_table.push(SymbolBlock::new());
-    let mut context = Context { symbol_table: symbol_table };
+    let mut context = Context { symbol_table };
 
     if let AST::STMT(ast_vec) = ast {
         run_stmt(&mut context, &ast_vec);

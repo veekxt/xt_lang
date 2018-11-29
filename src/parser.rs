@@ -91,9 +91,9 @@ impl AST {
             AST::DEF { ref iden, ref args, ref stmt } => {
                 println!("def");
                 (*iden).as_ref().print(n + 1);
-                println!("");
+                println!();
                 (*args).as_ref().print(n + 1);
-                println!("");
+                println!();
                 (*stmt).as_ref().print(n + 1);
             }
             AST::PLUS { ref left, ref right } => {
@@ -189,23 +189,23 @@ impl AST {
                 print!("args");
                 print!("({})", a.len());
                 for i in a {
-                    println!("");
+                    println!();
                     i.print(n + 1);
                 }
             }
             AST::CLASS { ref name, ref attrs, ref functions } => {
                 println!("class");
                 (*name).as_ref().print(n + 1);
-                println!("");
+                println!();
                 (*attrs).as_ref().print(n + 1);
-                println!("");
+                println!();
                 (*functions).as_ref().print(n + 1);
             }
             AST::FUNCTIONS(ref a) => {
                 print!("funcs");
                 print!("({})", a.len());
                 for i in a {
-                    println!("");
+                    println!();
                     i.print(n + 1);
                 }
             }
@@ -213,7 +213,7 @@ impl AST {
                 print!("attrs");
                 print!("({})", a.len());
                 for i in a {
-                    println!("");
+                    println!();
                     i.print(n + 1);
                 }
             }
@@ -225,20 +225,20 @@ impl AST {
             AST::STMT(ref ast_list) => {
                 print!("stmt");
                 for i in ast_list {
-                    println!("");
+                    println!();
                     i.print(n + 1);
                 }
             }
             AST::IF { ref exp, ref stmt, ref else_stmt } => {
                 print!("if");
-                println!("");
+                println!();
                 (*exp).as_ref().print(n + 1);
-                println!("");
+                println!();
                 (*stmt).as_ref().print(n + 1);
                 match *((*else_stmt).as_ref()) {
                     AST::NULL => {}
                     _ => {
-                        println!("");
+                        println!();
                         (*else_stmt).as_ref().print(n + 1);
                     }
                 }
@@ -489,7 +489,7 @@ pub struct Status {
 
 impl Status {
     pub fn new(err: bool, in_if: isize, in_loop: isize, in_stmt: isize, in_fn: isize) -> Status {
-        Status { err: err, in_if: in_if, in_loop: in_loop, in_stmt: in_stmt, in_fn: in_fn }
+        Status { err, in_if, in_loop, in_stmt, in_fn }
     }
 }
 
@@ -696,7 +696,7 @@ pub fn stmt(tokens: &mut StatusVec<(Token, usize)>, sta: &mut Status) -> Result<
             }
         }
     }
-    if (err) { Err(err) } else { Ok(AST::STMT(stmt_vec)) }
+    if err { Err(err) } else { Ok(AST::STMT(stmt_vec)) }
 }
 
 pub fn stmt_if(tokens: &mut StatusVec<(Token, usize)>, sta: &mut Status) -> AST {
